@@ -236,15 +236,19 @@
             }
         }
 
+        // =======================================================
+        // fetchData FUNCTION (KAYIT DÜZELTİLDİ)
+        // =======================================================
         async function fetchData() {
             try {
-                // 1. Fetch User Data
-                const userResponse = await fetch(`${RTDB_URL}/users/${userId}.json?auth=${FIREBASE_API_KEY}`);
-                let userData = await userResponse.json();
-
-                // 2. Yeni Kayıt Oluştur
-                if (!userData) {
-                    console.log(`User ${userId} not found. Creating new record.`);
+                // 1. Kullanıcı Verisini Çekmeye Çalış
+                const userReadResponse = await fetch(`${RTDB_URL}/users/${userId}.json?auth=${FIREBASE_API_KEY}`);
+                let userData = await userReadResponse.json();
+                
+                // 2. Eğer Kullanıcı Verisi YOKSA veya okuma BAŞARISIZ OLURSA, Yeni Kayıt Oluşturmayı Dene
+                if (!userReadResponse.ok || userData === null) {
+                    console.log(`User ${userId} not found or read failed. Attempting to create new record.`);
+                    
                     const initialData = {
                         balance: 0.00,
                         referrals: 0,
@@ -253,13 +257,22 @@
                         join_date: Date.now()
                     };
                     
-                    await fetch(`${RTDB_URL}/users/${userId}.json?auth=${FIREBASE_API_KEY}`, {
+                    // PUT isteği ile yeni kullanıcıyı oluştur
+                    const userWriteResponse = await fetch(`${RTDB_URL}/users/${userId}.json?auth=${FIREBASE_API_KEY}`, {
                         method: 'PUT',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(initialData)
                     });
-                    
-                    userData = initialData; 
+
+                    if (userWriteResponse.ok) {
+                        userData = initialData; // Yeni oluşturulan veriyi kullan
+                        console.log(`User ${userId} successfully created.`);
+                    } else {
+                        // Eğer kayıt başarısız olursa, kesinlikle RTDB kurallarınızda (Rules) yazma izni yoktur.
+                        console.error("CRITICAL: Failed to create user. Check RTDB Rules for /users/$uid write permission.");
+                        window.Telegram.WebApp.showAlert("ERROR: Database connection failed. Please check RTDB Rules. (Write Access Denied)");
+                        return; // Uygulamayı yüklemeyi durdur
+                    }
                 }
 
                 // 3. Verileri Yükle
@@ -270,7 +283,7 @@
                     userCompletedLinks = userData.completed_links || {}; 
                 }
 
-                // 4. Fetch Shortlinks Data
+                // 4. Shortlinks Verisini Çek
                 const linksResponse = await fetch(`${RTDB_URL}/shortlinks.json?auth=${FIREBASE_API_KEY}`);
                 shortlinksData = await linksResponse.json();
                 
@@ -280,11 +293,14 @@
                     fetchAdminData(activeAdminTab);
                 }
             } catch (error) {
-                console.error("Data fetching or user creation error:", error);
-                // Mini App'in yüklenmesini engellemeyelim
+                console.error("General data fetching error:", error);
+                window.Telegram.WebApp.showAlert("General Error: Could not connect to the database. Check API Key/RTDB URL.");
             }
         }
-
+        
+        // ... (Kalan fonksiyonlar (updateAllBalances, renderShortlinks, withdraw, admin) aynı kalmıştır)
+        
+        
         function updateAllBalances() {
              document.getElementById('usd-balance').textContent = `$${currentUsdBalance.toFixed(4)}`;
              document.getElementById('crypto-value-label').textContent = `~ ${currentUsdBalance.toFixed(8)} USDT`;
@@ -297,83 +313,6 @@
                  renderShortlinks();
              }
         }
-        
-        // ... (renderShortlinks ve diğer fonksiyonlar aynı kalmıştır)
-
-        // =======================================================
-        // ADMIN PANEL FUNCTIONS (GÜNCELLENDİ)
-        // =======================================================
-        
-        async function fetchAdminData(tabId) {
-            if (!ADMIN_IDS.includes(userId) || tabId === 'admin-shortlinks-tab') return;
-
-            const listEl = document.getElementById(tabId.replace('-tab', '-list'));
-            if (!listEl) return;
-            
-            listEl.innerHTML = `<div style="padding: 15px; color: var(--color-primary);"><i class="fas fa-spinner fa-spin"></i> Loading data...</div>`;
-
-            const dataType = tabId === 'admin-withdrawals-tab' ? 'withdrawals' : 'users';
-            
-            try {
-                // Deneme 1: Cloud Function (Güvenli Yol)
-                const response = await fetch(ADMIN_GET_DATA_FUNCTION_URL, {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ data: { dataType: dataType, adminId: userId } }) 
-                });
-                
-                if (response.ok) {
-                    const result = await response.json();
-                    const data = result.data?.list || {}; 
-
-                    if (dataType === 'withdrawals') {
-                        renderWithdrawals(data);
-                    } else if (dataType === 'users') {
-                        renderUsers(data);
-                    }
-                    return; // Başarılı, fonksiyonu bitir
-                } else {
-                    // Cloud Function'dan hata gelirse logla ve devam et
-                    console.error(`Cloud Function Error (${dataType}):`, response.statusText);
-                }
-
-            } catch (e) {
-                console.warn(`Cloud Function connection failed. Trying direct RTDB access for debug. Error: ${e.message}`);
-                // Muhtemelen yanlış URL veya CORS hatası
-            }
-
-            // Deneme 2: Direkt RTDB Okuma (Sadece Admin için ve test amaçlı)
-            try {
-                const directResponse = await fetch(`${RTDB_URL}/${dataType}.json?auth=${FIREBASE_API_KEY}`);
-                
-                if (!directResponse.ok) throw new Error("RTDB Access Denied (Check Firebase Rules)");
-
-                const directData = await directResponse.json();
-                
-                if (dataType === 'withdrawals') {
-                    renderWithdrawals(directData);
-                } else if (dataType === 'users') {
-                    renderUsers(directData);
-                }
-                
-                // Başarılı olursa, kullanıcıya uyarı göster (güvenlik uyarısı)
-                console.warn("RTDB Direct access successful! Please ensure your Cloud Function is working for security.");
-            } catch (e) {
-                // Her iki yöntem de başarısız olursa hata mesajı göster
-                let errorMessage = e.message.includes("RTDB Access Denied") 
-                    ? "RTDB'den doğrudan erişim engellendi. Firebase Rules'ı kontrol edin!" 
-                    : "Admin verisi yüklenemedi. Cloud Function URL'sini veya loglarını kontrol edin.";
-                    
-                listEl.innerHTML = `<div style="padding: 15px; color: var(--color-danger);">
-                                     <i class="fas fa-exclamation-triangle"></i> ${errorMessage}
-                                   </div>`;
-            }
-        }
-
-        // ... (renderWithdrawals, renderUsers ve diğer fonksiyonlar aynı kalmıştır)
-        
-        // =======================================================
-        // KODUN KALAN KISMI AYNI KALMIŞTIR
-        // =======================================================
         
         function renderShortlinks() { 
             const listEl = document.getElementById('shortlink-list');
@@ -557,6 +496,68 @@
             element.classList.add('active');
             
             fetchAdminData(tabId);
+        }
+        
+        // =======================================================
+        // fetchAdminData FUNCTION (AYNI KALDI - Admin verisi çekimi)
+        // =======================================================
+        async function fetchAdminData(tabId) {
+            if (!ADMIN_IDS.includes(userId) || tabId === 'admin-shortlinks-tab') return;
+
+            const listEl = document.getElementById(tabId.replace('-tab', '-list'));
+            if (!listEl) return;
+            
+            listEl.innerHTML = `<div style="padding: 15px; color: var(--color-primary);"><i class="fas fa-spinner fa-spin"></i> Loading data...</div>`;
+
+            const dataType = tabId === 'admin-withdrawals-tab' ? 'withdrawals' : 'users';
+            
+            try {
+                // Deneme 1: Cloud Function (Güvenli Yol)
+                const response = await fetch(ADMIN_GET_DATA_FUNCTION_URL, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ data: { dataType: dataType, adminId: userId } }) 
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    const data = result.data?.list || {}; 
+
+                    if (dataType === 'withdrawals') {
+                        renderWithdrawals(data);
+                    } else if (dataType === 'users') {
+                        renderUsers(data);
+                    }
+                    return; 
+                } else {
+                    console.error(`Cloud Function Error (${dataType}):`, response.statusText);
+                }
+
+            } catch (e) {
+                console.warn(`Cloud Function connection failed. Trying direct RTDB access for debug. Error: ${e.message}`);
+            }
+
+            // Deneme 2: Direkt RTDB Okuma (Test amaçlı, sadece okuma kuralı açıksa çalışır)
+            try {
+                const directResponse = await fetch(`${RTDB_URL}/${dataType}.json?auth=${FIREBASE_API_KEY}`);
+                
+                if (!directResponse.ok) throw new Error("RTDB Access Denied (Check Firebase Rules)");
+
+                const directData = await directResponse.json();
+                
+                if (dataType === 'withdrawals') {
+                    renderWithdrawals(directData);
+                } else if (dataType === 'users') {
+                    renderUsers(directData);
+                }
+            } catch (e) {
+                let errorMessage = e.message.includes("RTDB Access Denied") 
+                    ? "RTDB'den doğrudan erişim engellendi. Firebase Rules'ı kontrol edin!" 
+                    : "Admin verisi yüklenemedi. Cloud Function URL'sini veya loglarını kontrol edin.";
+                    
+                listEl.innerHTML = `<div style="padding: 15px; color: var(--color-danger);">
+                                     <i class="fas fa-exclamation-triangle"></i> ${errorMessage}
+                                   </div>`;
+            }
         }
         
         function renderWithdrawals(withdrawals) {
