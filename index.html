@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>USDT Faucet | Telegram Mini App</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+    <style>
+        /* ========================================= */
+        /* CSS (Önceki Kodun Üzerine Kaydırma ve Yeni Stil Eklemeleri) */
+        /* ========================================= */
+        :root {
+            --bg-light: #ffffff;
+            --bg-card: #f8f9fa;
+            --color-primary: #007bff;
+            --color-success: #28a745;
+            --color-danger: #dc3545; /* Yeni: Kırmızı */
+            --color-warning: #ffc107; /* Yeni: Sarı */
+            --color-text-dark: #343a40;
+            --color-text-light: #6c757d;
+            --border-color: #dee2e6;
+        }
+
+        body { /* ... (Aynı) */ }
+        .container { /* ... (Aynı) */ }
+        /* ... (Card, Balance, Button stilleri aynı kalır) ... */
+
+        /* YENİ: Kaydırılabilir Liste Konteyneri */
+        .scrollable-list-container {
+            max-height: 400px; /* Kaydırma yüksekliği */
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background-color: var(--bg-light);
+            margin-top: 15px;
+        }
+        
+        /* YENİ: Admin Liste Öğeleri */
+        .admin-list-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .admin-list-item:last-child {
+            border-bottom: none;
+        }
+        .admin-list-item:hover {
+            background-color: #e9ecef;
+        }
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+        .status-pending { background-color: var(--color-warning); color: var(--color-text-dark); }
+        .status-paid { background-color: var(--color-success); color: white; }
+        .status-rejected { background-color: var(--color-danger); color: white; }
+
+        /* YENİ: Admin Sekme Navigasyonu */
+        .admin-tab-nav {
+            display: flex;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 15px;
+            overflow-x: auto;
+        }
+        .admin-tab-nav button {
+            flex-shrink: 0;
+            background: none;
+            border: none;
+            padding: 10px 15px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            color: var(--color-text-light);
+            border-bottom: 2px solid transparent;
+            margin-right: 10px;
+            font-weight: 500;
+        }
+        .admin-tab-nav button.active {
+            color: var(--color-danger);
+            border-bottom: 2px solid var(--color-danger);
+            font-weight: 700;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        
+        <div class="card main-balance">
+            <div class="balance-label">Total Balance (USD)</div>
+            <div class="balance-amount" id="usd-balance">$0.00</div>
+            <div style="font-size: 0.9rem; color: var(--color-text-light); margin-top: 5px;" id="crypto-value-label">~ 0.00000000 USDT</div>
+        </div>
+
+        <div class="tab-nav">
+            <button class="active" onclick="showSection('dashboard', this)">Dashboard</button>
+            <button onclick="showSection('shortlinks', this)">Shortlinks</button>
+            <button onclick="showSection('withdraw', this)">Withdraw</button>
+            <button id="admin-tab-btn" style="display:none; color:#dc3545;" onclick="showSection('admin', this)">Admin <i class="fas fa-tools"></i></button> 
+        </div>
+
+        <div id="dashboard-section" class="section">
+            <div class="stats-grid">
+                <div class="card"><div class="balance-label">Total Referrals</div><div class="stat-value" style="color: var(--color-primary);" id="total-referrals">0</div></div>
+                <div class="card"><div class="balance-label">Referral Earnings</div><div class="stat-value" style="color: var(--color-success);" id="referral-earnings">$0.00</div></div>
+            </div>
+            <div class="card">
+                <h2><i class="fas fa-users"></i> Invite Friends</h2>
+                <input type="text" id="referralLink" class="input-style" readonly value="Loading...">
+                <button class="btn-primary" onclick="copyReferralLink()"><i class="fas fa-copy"></i> Copy Link</button>
+            </div>
+        </div>
+
+        <div id="shortlinks-section" class="section" style="display:none;">
+             <div class="card">
+                <h2><i class="fas fa-link"></i> Shortlinks</h2>
+                <p style="color: var(--color-text-light); font-size: 0.9rem;">The reward is added instantly and securely (S2S Callback).</p>
+                <div id="shortlink-list"></div>
+            </div>
+        </div>
+        
+        <div id="withdraw-section" class="section" style="display:none;">
+             <div class="card">
+                <h2><i class="fas fa-wallet"></i> Withdraw USDT (MATIC)</h2>
+                <p style="color: var(--color-text-light);">Current Balance: <strong style="color: var(--color-success);" id="withdraw-usd-balance">$0.00</strong></p>
+                <p style="font-size: 0.9rem; color: var(--color-danger); font-weight: 500;">Minimum Withdrawal: $0.50 USD</p>
+                
+                <label style="display: block; margin-top: 15px; font-weight: 500;">USDT (MATIC - Polygon) Address:</label>
+                <input type="text" id="usdtAddress" placeholder="0x..." class="input-style">
+                
+                <label style="display: block; font-weight: 500;">Amount to Withdraw (USD):</label>
+                <input type="number" id="withdrawAmount" value="0.50" class="input-style" min="0.50">
+
+                <button class="btn-primary" onclick="requestWithdrawal()"><i class="fas fa-paper-plane"></i> Submit Withdrawal Request</button>
+            </div>
+        </div>
+
+        <div id="admin-section" class="section" style="display:none;">
+            <h2><i class="fas fa-tools"></i> Admin Panel</h2>
+            
+            <div class="admin-tab-nav">
+                <button class="active" onclick="showAdminSection('admin-shortlinks-tab', this)">Shortlinks</button>
+                <button onclick="showAdminSection('admin-withdrawals-tab', this)">Withdrawals</button>
+                <button onclick="showAdminSection('admin-users-tab', this)">Users</button>
+            </div>
+            
+            <div id="admin-shortlinks-tab" class="admin-tab-content">
+                <div class="card">
+                    <h3>Yeni Shortlink Ekle (RTDB'ye Kayıt)</h3>
+                    <label>Link Adı:</label>
+                    <input type="text" id="linkName" class="input-style" placeholder="Daily Ad Link">
+                    <label>Ziyaret Linki (Base URL):</label>
+                    <input type="url" id="baseUrl" class="input-style" placeholder="https://shrtfly.com/xyz123">
+                    <label>Ödül Miktarı (USD):</label>
+                    <input type="number" id="rewardAmount" class="input-style" value="0.015" step="0.001">
+                    <button class="btn-primary" onclick="addNewShortlink()"><i class="fas fa-plus"></i> Linki Oluştur ve Kaydet</button>
+                </div>
+
+                <div id="callback-result-card" class="card" style="display:none; border-left: 5px solid #ffc107;">
+                    <h3>✅ Link RTDB'ye Kaydedildi!</h3>
+                    <p style="color:var(--color-text-light);">BU URL'Yİ KOPYALAYIP Shortlink Platformunun S2S Postback/Callback ayarına YAPIŞTIRIN.</p>
+                    <textarea id="finalCallbackUrlOutput" class="input-style" rows="4" readonly></textarea>
+                    <button class="btn-primary" onclick="copyCallbackUrl()" style="width:auto;"><i class="fas fa-copy"></i> Kopyala</button>
+                </div>
+                
+                <h3 style="margin-top: 30px;">Aktif Shortlink Listesi</h3>
+                <div class="scrollable-list-container" id="admin-shortlink-list">
+                    <div style="padding: 15px; color: var(--color-text-light);">Loading Shortlinks...</div>
+                </div>
+            </div>
+
+            <div id="admin-withdrawals-tab" class="admin-tab-content" style="display:none;">
+                <h3 style="color: var(--color-danger);">Bekleyen Ödeme Talepleri</h3>
+                <div class="scrollable-list-container" id="admin-withdrawal-list">
+                     <div class="admin-list-item"><span>UID: 123... ($1.50)</span><span class="status-badge status-pending">Pending</span></div>
+                    <div class="admin-list-item"><span>UID: 456... ($0.55)</span><span class="status-badge status-pending">Pending</span></div>
+                    <div class="admin-list-item"><span>UID: 789... ($0.80)</span><span class="status-badge status-paid">Paid</span></div>
+                    <div class="admin-list-item"><span>UID: 101... ($2.10)</span><span class="status-badge status-pending">Pending</span></div>
+                </div>
+                 <p style="margin-top: 10px; color: var(--color-text-light); font-size: 0.9rem;">* Gerçek uygulamada, bu listedeki talepleri ödeme yapıldı/reddedildi olarak güncelleyen butonlar olacaktır.</p>
+            </div>
+
+            <div id="admin-users-tab" class="admin-tab-content" style="display:none;">
+                <h3>Tüm Kullanıcılar (Bakiye Sıralı)</h3>
+                <div class="scrollable-list-container" id="admin-user-list">
+                     <div class="admin-list-item"><span>UID: 9999 (Balance: $5.20)</span><span>Joined: 01.10.2024</span></div>
+                    <div class="admin-list-item"><span>UID: 1234 (Balance: $3.15)</span><span>Joined: 05.10.2024</span></div>
+                    <div class="admin-list-item"><span>UID: 5678 (Balance: $0.05)</span><span>Joined: 20.10.2024</span></div>
+                    <div class="admin-list-item"><span>UID: 1011 (Balance: $1.00)</span><span>Joined: 25.10.2024</span></div>
+                </div>
+            </div>
+            
+        </div>
+        
+    </div>
+
+    <script>
+        // =======================================================
+        // KRİTİK KONFİGÜRASYONLAR (LÜTFEN DEĞİŞTİRİN)
+        // =======================================================
+        const FIREBASE_API_KEY = 'AIzaSyCy1QPNWqd3nPnuECNRNNPtfNTOzq_0MxM'; 
+        const RTDB_URL = 'https://shrtlinkearner-default-rtdb.firebaseio.com'; 
+        const SIMULATED_BTC_PRICE = 60000; // Sadece görüntü amaçlı
+        const MIN_WITHDRAWAL = 0.50; // YENİ: $0.50 Minimum Çekim
+        
+        // !!! DEPLOY SONRASI GİRİLMESİ GEREKEN URL'LER !!!
+        const ADD_LINK_FUNCTION_URL = 'YOUR_ADD_LINK_FUNCTION_URL'; 
+        const CALLBACK_BASE_URL = 'YOUR_FIREBASE_CALLBACK_URL'; 
+        // WITHDRAWAL FUNCTION (Yeni bir Cloud Function gerekir)
+        const WITHDRAW_FUNCTION_URL = 'YOUR_WITHDRAW_FUNCTION_URL'; 
+
+        // SİZİN TELEGRAM ID'NİZ
+        const ADMIN_IDS = ['7904032877']; 
+
+        // =======================================================
+        // GLOBAL DURUM DEĞİŞKENLERİ
+        // =======================================================
+        let userId = '999999999'; 
+        let userCompletedLinks = {};
+        let shortlinksData = {};
+        let currentUsdBalance = 0.00;
+        let totalReferrals = 0;
+        let referralEarnings = 0.00;
+        let activeSection = 'dashboard';
+        let activeAdminTab = 'admin-shortlinks-tab'; // Yeni admin sekmesi
+
+        // =======================================================
+        // CORE INITIALIZATION & DATA FETCHING
+        // =======================================================
+        // ... (initializeMiniApp ve fetchData aynı kalır) ...
+
+        document.addEventListener('DOMContentLoaded', initializeMiniApp);
+
+        function initializeMiniApp() {
+            if (window.Telegram && window.Telegram.WebApp) {
+                const webApp = window.Telegram.WebApp;
+                const user = webApp.initDataUnsafe.user;
+                
+                if (user) {
+                    userId = user.id.toString();
+                }
+                
+                webApp.ready();
+                webApp.MainButton.setText("Refresh Balance").show().onClick(fetchData);
+                
+                document.body.style.backgroundColor = webApp.themeParams.bg_color || 'var(--bg-light)';
+                
+                if (ADMIN_IDS.includes(userId)) {
+                    document.getElementById('admin-tab-btn').style.display = 'inline-block';
+                }
+                
+                fetchData(); 
+                setInterval(fetchData, 15000); 
+            } else {
+                 fetchData();
+            }
+        }
+
+        async function fetchData() {
+            try {
+                // 1. Kullanıcı Verisini Çekme
+                const userResponse = await fetch(`${RTDB_URL}/users/${userId}.json?auth=${FIREBASE_API_KEY}`);
+                const userData = await userResponse.json();
+
+                if (userData) {
+                    currentUsdBalance = userData.balance || 0;
+                    totalReferrals = userData.referrals || 0;
+                    referralEarnings = userData.referral_earnings || 0;
+                    userCompletedLinks = userData.completed_links || {};
+                }
+
+                // 2. Shortlink Listesini Çekme
+                const linksResponse = await fetch(`${RTDB_URL}/shortlinks.json?auth=${FIREBASE_API_KEY}`);
+                shortlinksData = await linksResponse.json();
+                
+                updateAllBalances();
+                
+                // Admin sekmesindeyse, admin verilerini de çek (Gerçek uygulamada sadece adminler için çağrılmalı)
+                if (ADMIN_IDS.includes(userId)) {
+                    // Bu fonksiyon, gerçekte RTDB'den tüm çekim/kullanıcı verisini çekmelidir.
+                    // Burada sadece arayüzü güncelliyoruz.
+                    // fetchAdminData(); 
+                    renderAdminShortlinks();
+                }
+            } catch (error) {
+                console.error("Veri çekme hatası:", error);
+                if (window.Telegram && window.Telegram.WebApp) {
+                    window.Telegram.WebApp.showAlert("Hata: Sunucuya bağlanılamıyor.");
+                }
+            }
+        }
+
+        function updateAllBalances() {
+             document.getElementById('usd-balance').textContent = `$${currentUsdBalance.toFixed(4)}`;
+             // Kripto değeri: USDT olarak göster
+             document.getElementById('crypto-value-label').textContent = `~ ${currentUsdBalance.toFixed(8)} USDT`;
+             document.getElementById('total-referrals').textContent = totalReferrals;
+             document.getElementById('referral-earnings').textContent = `$${referralEarnings.toFixed(4)}`;
+             document.getElementById('referralLink').value = `https://t.me/your_bot_name?start=${userId}`;
+             document.getElementById('withdraw-usd-balance').textContent = `$${currentUsdBalance.toFixed(4)}`;
+             
+             if(activeSection === 'shortlinks') {
+                 renderShortlinks();
+             }
+        }
+        
+        // ... (renderShortlinks ve closeMiniAppOnVisit aynı kalır) ...
+        function renderShortlinks() { 
+            const listEl = document.getElementById('shortlink-list');
+            listEl.innerHTML = '';
+            
+            if (!shortlinksData || Object.keys(shortlinksData).length === 0) {
+                 listEl.innerHTML = `<div class="card" style="color: var(--color-text-light);">Aktif shortlink bulunamadı.</div>`;
+                 return;
+            }
+
+            Object.entries(shortlinksData).forEach(([linkId, linkData]) => {
+                const isPassed = userCompletedLinks[linkId] === true; 
+                const finalVisitUrl = `${linkData.base_url}?sub_id=${userId}`; 
+
+                const itemHtml = `
+                    <div class="shortlink-item ${isPassed ? 'disabled-item' : ''}">
+                        <div class="item-details">
+                            <p style="font-weight: 500;">${linkData.name}</p>
+                            <p style="font-size: 0.8rem; color: var(--color-text-light);">Link ID: ${linkId}</p>
+                        </div>
+                        <div class="link-reward">
+                            +$${linkData.reward.toFixed(3)}
+                        </div>
+                        <div style="margin-left: 15px;">
+                            ${isPassed 
+                                ? `<button class="btn-success"><i class="fas fa-check"></i> Tamamlandı</button>`
+                                : `<a href="${finalVisitUrl}" target="_blank" class="btn-visit" onclick="closeMiniAppOnVisit();">
+                                     <i class="fas fa-external-link-alt"></i> Ziyaret Et
+                                   </a>`
+                            }
+                        </div>
+                    </div>
+                `;
+                listEl.innerHTML += itemHtml;
+            });
+        }
+        
+        function closeMiniAppOnVisit() {
+             if (window.Telegram && window.Telegram.WebApp) {
+                 window.Telegram.WebApp.close();
+             }
+        }
+
+
+        // =======================================================
+        // WITHDRAWAL FUNCTIONS (YENİ)
+        // =======================================================
+
+        async function requestWithdrawal() {
+             const amount = parseFloat(document.getElementById('withdrawAmount').value);
+             const address = document.getElementById('usdtAddress').value.trim();
+             
+             if(amount < MIN_WITHDRAWAL) {
+                 window.Telegram.WebApp.showAlert(`Minimum çekim miktarı $${MIN_WITHDRAWAL.toFixed(2)} USD'dir.`);
+                 return;
+             }
+             if(amount > currentUsdBalance) {
+                 window.Telegram.WebApp.showAlert("Yetersiz bakiye!");
+                 return;
+             }
+             if(address.length < 20 || !address.startsWith('0x')) { // Basit Polygon/EVM adresi kontrolü
+                 window.Telegram.WebApp.showAlert("Geçersiz USDT (MATIC) adresi!");
+                 return;
+             }
+             
+             window.Telegram.WebApp.MainButton.setText("Talebiniz Gönderiliyor...").show().disable();
+             
+             try {
+                // Burada WITHDRAW_FUNCTION_URL'ye çekim isteği göndermelisiniz.
+                // Bu fonksiyon, veritabanına bir çekim kaydı oluşturmalıdır.
+                /*
+                const response = await fetch(WITHDRAW_FUNCTION_URL, {
+                    method: 'POST',
+                    // ... (Data to send: userId, amount, address)
+                });
+                */
+
+                 // SIMÜLASYON
+                 window.Telegram.WebApp.showPopup({
+                     message: `Çekim talebi oluşturuldu: $${amount.toFixed(2)} USDT, ${address} adresine. Talebiniz en kısa sürede işlenecektir.`,
+                     title: "Withdrawal Requested"
+                 });
+             } catch (e) {
+                 window.Telegram.WebApp.showAlert("Çekim talebi gönderilemedi.");
+             } finally {
+                window.Telegram.WebApp.MainButton.setText("Refresh Balance").enable();
+             }
+        }
+
+
+        // =======================================================
+        // ADMIN PANELİ FONKSİYONLARI (GÜNCELLENDİ)
+        // =======================================================
+        
+        // Admin Sekme Yöneticisi
+        function showAdminSection(tabId, element) {
+            activeAdminTab = tabId;
+            document.querySelectorAll('.admin-tab-content').forEach(section => {
+                section.style.display = 'none';
+            });
+            document.getElementById(tabId).style.display = 'block';
+
+            document.querySelectorAll('.admin-tab-nav button').forEach(button => {
+                button.classList.remove('active');
+            });
+            element.classList.add('active');
+            
+            // Eğer Shortlinks sekmesine geçiliyorsa listeyi güncelle
+            if (tabId === 'admin-shortlinks-tab') {
+                renderAdminShortlinks();
+            }
+        }
+        
+        // Admin Kısa Link Listesi Render
+        function renderAdminShortlinks() {
+            const listEl = document.getElementById('admin-shortlink-list');
+            listEl.innerHTML = '';
+            
+            if (!shortlinksData || Object.keys(shortlinksData).length === 0) {
+                 listEl.innerHTML = `<div style="padding: 15px; color: var(--color-text-light);">Henüz Shortlink eklenmedi.</div>`;
+                 return;
+            }
+            
+            Object.entries(shortlinksData).forEach(([linkId, linkData]) => {
+                const itemHtml = `
+                    <div class="admin-list-item">
+                        <div>
+                            <span style="font-weight: 500;">${linkData.name}</span>
+                            <p style="font-size: 0.8rem; color: var(--color-text-light); margin: 2px 0;">ID: ${linkId} | Ödül: $${linkData.reward.toFixed(3)}</p>
+                        </div>
+                        <button style="background-color: var(--color-danger); color: white; border: none; padding: 5px 10px; border-radius: 4px;" onclick="alert('Delete ${linkId}')">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                `;
+                listEl.innerHTML += itemHtml;
+            });
+        }
+
+
+        // Shortlink Ekleme Fonksiyonu (Aynı Kalır)
+        async function addNewShortlink() {
+            if (!ADMIN_IDS.includes(userId)) { window.Telegram.WebApp.showAlert("Yetkisiz işlem!"); return; }
+
+            const name = document.getElementById('linkName').value;
+            const baseUrl = document.getElementById('baseUrl').value;
+            const reward = document.getElementById('rewardAmount').value;
+
+            if (!name || !baseUrl || isNaN(parseFloat(reward)) || parseFloat(reward) <= 0) {
+                window.Telegram.WebApp.showAlert("Lütfen tüm alanları doğru doldurun.");
+                return;
+            }
+            
+            document.getElementById('callback-result-card').style.display = 'none';
+            window.Telegram.WebApp.MainButton.setText("Oluşturuluyor...").show().disable();
+
+            try {
+                const dataToSend = {
+                    name: name, base_url: baseUrl, reward: reward, callback_base_url: CALLBACK_BASE_URL, userId: userId
+                };
+                
+                const response = await fetch(ADD_LINK_FUNCTION_URL, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ data: dataToSend }) 
+                });
+                
+                const result = await response.json();
+                
+                if (result.data && result.data.status === 'success') {
+                    document.getElementById('finalCallbackUrlOutput').value = result.data.finalCallbackUrl;
+                    document.getElementById('callback-result-card').style.display = 'block';
+                    window.Telegram.WebApp.showAlert(`Shortlink başarıyla kaydedildi! ID: ${result.data.linkId}`);
+                    fetchData(); 
+                } else {
+                    window.Telegram.WebApp.showAlert(`Hata: ${result.error?.message || 'Link eklenirken sunucu hatası.'}`);
+                }
+
+            } catch (error) {
+                console.error('Add Shortlink Error:', error);
+                window.Telegram.WebApp.showAlert("Sunucuya bağlanılamadı.");
+            } finally {
+                window.Telegram.WebApp.MainButton.setText("Refresh Balance").enable();
+            }
+        }
+        
+        function copyCallbackUrl() {
+            const textarea = document.getElementById('finalCallbackUrlOutput');
+            textarea.select();
+            textarea.setSelectionRange(0, 99999); 
+            navigator.clipboard.writeText(textarea.value);
+            window.Telegram.WebApp.showAlert("Callback URL panoya kopyalandı!");
+        }
+        
+        // =======================================================
+        // UI AND MISC FUNCTIONS
+        // =======================================================
+
+        function showSection(sectionId, element) {
+            activeSection = sectionId;
+            document.querySelectorAll('.section').forEach(section => {
+                section.style.display = 'none';
+            });
+            document.getElementById(`${sectionId}-section`).style.display = 'block';
+
+            document.querySelectorAll('.tab-nav button').forEach(button => {
+                button.classList.remove('active');
+            });
+            element.classList.add('active');
+            
+            if (sectionId === 'shortlinks') {
+                 renderShortlinks();
+            } else if (sectionId === 'admin' && ADMIN_IDS.includes(userId)) {
+                 // Admin sekmesine geçildiğinde varsayılan sekme içeriğini göster
+                 showAdminSection(activeAdminTab, document.querySelector(`#admin-tab-btn`).nextElementSibling.querySelector('button.active') || document.querySelector('.admin-tab-nav button'));
+            }
+        }
+        
+        function copyReferralLink() {
+            const linkInput = document.getElementById('referralLink');
+            linkInput.select();
+            linkInput.setSelectionRange(0, 99999); 
+            navigator.clipboard.writeText(linkInput.value);
+            
+            if (window.Telegram && window.Telegram.WebApp) {
+                 window.Telegram.WebApp.showPopup({message: 'Referans linki panoya kopyalandı!'});
+            } else {
+                 alert('Referans linki kopyalandı: ' + linkInput.value);
+            }
+        }
+        
+        // Varsayılan sekme gösterimi
+        document.getElementById('shortlinks-section').style.display = 'none';
+        document.getElementById('withdraw-section').style.display = 'none';
+        document.getElementById('admin-section').style.display = 'none';
+    </script>
+</body>
+</html>
