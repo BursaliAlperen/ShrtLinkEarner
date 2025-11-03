@@ -9,8 +9,6 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
     <style>
-        /* (CSS styles remain the same for brevity) */
-        /* ... Önceki CSS kodunuz buraya gelmeli ... */
         :root {
             --bg-light: #ffffff;
             --bg-card: #f8f9fa;
@@ -45,7 +43,8 @@
         .item-details p { margin: 0; }
         .input-style { width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid var(--border-color); border-radius: 6px; box-sizing: border-box; color: var(--color-text-dark); background-color: var(--bg-light); }
         .btn-primary { background-color: var(--color-primary); color: white; padding: 10px 20px; border: none; border-radius: 6px; font-weight: 500; cursor: pointer; transition: background-color 0.2s; width: 100%; }
-        .btn-primary:hover { background-color: #0056b3; }
+        .btn-primary:hover:not(:disabled) { background-color: #0056b3; }
+        .btn-primary:disabled { background-color: #999; cursor: not-allowed; }
         .disabled-item { opacity: 0.6; }
         
         .tab-nav { display: flex; margin-bottom: 20px; border-bottom: 1px solid var(--border-color); overflow-x: auto; }
@@ -107,7 +106,9 @@
                 <h2><i class="fas fa-link"></i> Available Shortlinks</h2>
                 <p style="color: var(--color-text-light); font-size: 0.9rem;">Complete a shortlink to earn reward instantly.</p>
                 <div class="shortlink-list-container">
-                    <div id="shortlink-list"></div>
+                    <div id="shortlink-list">
+                        <div style="padding: 15px; color: var(--color-text-light); text-align: center;">Loading shortlinks...</div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -122,7 +123,7 @@
                 <input type="text" id="usdtAddress" placeholder="0x..." class="input-style">
                 
                 <label style="display: block; font-weight: 500;">Amount to Withdraw (USD):</label>
-                <input type="number" id="withdrawAmount" value="0.50" class="input-style" min="0.50">
+                <input type="number" id="withdrawAmount" value="0.50" class="input-style" min="0.50" step="0.01">
 
                 <button class="btn-primary" onclick="requestWithdrawal()"><i class="fas fa-paper-plane"></i> Submit Withdrawal Request</button>
             </div>
@@ -161,14 +162,14 @@
             <div id="admin-withdrawals-tab" class="admin-tab-content" style="display:none;">
                 <h3 style="color: var(--color-danger);">Pending Withdrawal Requests</h3>
                 <div class="scrollable-list-container" id="admin-withdrawal-list">
-                     <div style="padding: 15px; color: var(--color-text-light);">Loading data...</div>
+                     <div style="padding: 15px; color: var(--color-text-light); text-align: center;">Loading data...</div>
                 </div>
             </div>
 
             <div id="admin-users-tab" class="admin-tab-content" style="display:none;">
                 <h3>All Users (Sorted by Balance)</h3>
                 <div class="scrollable-list-container" id="admin-user-list">
-                     <div style="padding: 15px; color: var(--color-text-light);">Loading data...</div>
+                     <div style="padding: 15px; color: var(--color-text-light); text-align: center;">Loading data...</div>
                 </div>
             </div>
             
@@ -184,9 +185,10 @@
         const RTDB_URL = 'https://shrtlinkearner-default-rtdb.firebaseio.com'; 
         const MIN_WITHDRAWAL = 0.50; 
         
-        const BOT_NAME = 'ShrtLinkEarnerBot';
+        // Telegram Botunuzun Kullanıcı Adı (örn: @MyCryptoFaucetBot ise, MyCryptoFaucetBot yazın)
+        const BOT_NAME = 'ShrtLinkEarnerBot'; 
         
-        // !!! CLOUD FUNCTION URLS (SADECE GEREKLİ OLANLAR KALDI) !!!
+        // !!! CLOUD FUNCTION URLS (Kendi fonksiyonlarınızın URL'si ile DEĞİŞTİRİN) !!!
         const ADD_LINK_FUNCTION_URL = 'YOUR_ADD_LINK_FUNCTION_URL'; 
         const CALLBACK_BASE_URL = 'YOUR_FIREBASE_CALLBACK_URL'; 
         const WITHDRAW_FUNCTION_URL = 'YOUR_WITHDRAW_FUNCTION_URL'; 
@@ -198,7 +200,7 @@
         // =======================================================
         // GLOBAL STATE AND CORE FUNCTIONS
         // =======================================================
-        let userId = '999999999'; 
+        let userId = '999999999'; // Telegram WebApp yoksa test ID'si
         let userCompletedLinks = {};
         let shortlinksData = {};
         let currentUsdBalance = 0.00;
@@ -219,9 +221,12 @@
                     userId = webApp.initDataUnsafe.user.id.toString(); 
                 } 
                 
+                // Telegram MainButton'u ayarlama
                 webApp.MainButton.setText("Refresh Balance").show().onClick(fetchData);
+                // Telegram tema renklerini kullanma (isteğe bağlı)
                 document.body.style.backgroundColor = webApp.themeParams.bg_color || 'var(--bg-light)';
                 
+                // Admin butonu görünürlüğünü ayarlama
                 if (ADMIN_IDS.includes(userId)) {
                     document.getElementById('admin-icon-btn').style.display = 'block';
                 } else {
@@ -229,29 +234,25 @@
                 }
                 
                 fetchData(); 
-                setInterval(fetchData, 10000); 
+                // Başlangıç sekmesini ayarla
+                showSection('dashboard', document.querySelector('.tab-nav button.active')); 
+                
             } else {
+                 // Telegram WebApp yoksa bile çalışsın
+                 showSection('dashboard', document.querySelector('.tab-nav button.active')); 
                  fetchData();
             }
         }
 
         async function fetchData() {
             try {
-                // 1. Kullanıcı Verisini Çekmeye Çalış
+                // 1. Kullanıcı Verisini Çek
                 const userReadResponse = await fetch(`${RTDB_URL}/users/${userId}.json?auth=${FIREBASE_API_KEY}`);
                 let userData = await userReadResponse.json();
                 
-                // 2. Eğer Kullanıcı Verisi YOKSA veya okuma BAŞARISIZ OLURSA, Yeni Kayıt Oluşturmayı Dene
+                // 2. Kullanıcı Yoksa Yeni Kayıt Oluştur
                 if (!userReadResponse.ok || userData === null) {
-                    console.log(`User ${userId} not found or read failed. Attempting to create new record.`);
-                    
-                    const initialData = {
-                        balance: 0.00,
-                        referrals: 0,
-                        referral_earnings: 0.00,
-                        completed_links: {},
-                        join_date: Date.now()
-                    };
+                    const initialData = { balance: 0.00, referrals: 0, referral_earnings: 0.00, completed_links: {}, join_date: Date.now() };
                     
                     const userWriteResponse = await fetch(`${RTDB_URL}/users/${userId}.json?auth=${FIREBASE_API_KEY}`, {
                         method: 'PUT',
@@ -261,15 +262,13 @@
 
                     if (userWriteResponse.ok) {
                         userData = initialData; 
-                        console.log(`User ${userId} successfully created.`);
                     } else {
-                        console.error("CRITICAL: Failed to create user. Check RTDB Rules for /users/$uid write permission.");
-                        window.Telegram.WebApp.showAlert("ERROR: Database connection failed. Please check RTDB Rules. (Write Access Denied)");
+                        console.error("CRITICAL: Failed to create user.");
                         return; 
                     }
                 }
 
-                // 3. Verileri Yükle
+                // 3. Verileri Global State'e Yükle
                 if (userData) {
                     currentUsdBalance = userData.balance || 0;
                     totalReferrals = userData.referrals || 0;
@@ -279,18 +278,17 @@
 
                 // 4. Shortlinks Verisini Çek
                 const linksResponse = await fetch(`${RTDB_URL}/shortlinks.json?auth=${FIREBASE_API_KEY}`);
-                shortlinksData = await linksResponse.json();
+                shortlinksData = await linksResponse.json() || {};
                 
                 updateAllBalances();
                 
                 // Admin paneli açıksa, verileri çek.
                 if (ADMIN_IDS.includes(userId) && activeSection === 'admin') {
-                    // Bu sefer Cloud Function kullanmadan doğrudan RTDB'den çekiyoruz
                     fetchAdminData(activeAdminTab);
                 }
+
             } catch (error) {
                 console.error("General data fetching error:", error);
-                window.Telegram.WebApp.showAlert("General Error: Could not connect to the database. Check API Key/RTDB URL.");
             }
         }
 
@@ -306,11 +304,210 @@
                  renderShortlinks();
              }
         }
-        
-        // ... (renderShortlinks, requestWithdrawal, addNewShortlink, updateShortlinkBaseUrl, copy functions aynı kalmıştır)
 
         // =======================================================
-        // ADMIN PANEL FUNCTIONS (BASİTLEŞTİRİLDİ: Direkt RTDB Çekim)
+        // ETKİLEŞİM FONKSİYONLARI
+        // =======================================================
+
+        function showSection(sectionId, element) {
+            activeSection = sectionId;
+            document.querySelectorAll('.section').forEach(section => {
+                section.style.display = 'none';
+            });
+            document.getElementById(sectionId + '-section').style.display = 'block';
+
+            document.querySelectorAll('.tab-nav button').forEach(button => {
+                button.classList.remove('active');
+            });
+            
+            if (element && element.id !== 'admin-icon-btn') {
+                 element.classList.add('active');
+            } else if (element && element.id === 'admin-icon-btn') {
+                // Admin butonu tıklandığında normal sekmelerin aktifliğini kaldır
+                document.querySelectorAll('.tab-nav button').forEach(button => {
+                    button.classList.remove('active');
+                });
+            }
+            
+            if (sectionId === 'shortlinks') {
+                renderShortlinks();
+            }
+            
+            if (sectionId === 'admin') {
+                showAdminSection('admin-shortlinks-tab', document.querySelector('.admin-tab-nav button'));
+            }
+        }
+
+        function renderShortlinks() {
+            const listEl = document.getElementById('shortlink-list');
+            listEl.innerHTML = '';
+            
+            if (!shortlinksData || Object.keys(shortlinksData).length === 0) {
+                listEl.innerHTML = `<div style="padding: 15px; color: var(--color-text-light); text-align: center;">No shortlinks are available at the moment. Please check back later!</div>`;
+                return;
+            }
+
+            Object.entries(shortlinksData).forEach(([linkId, link]) => {
+                const today = new Date().toISOString().split('T')[0];
+                const isCompletedToday = userCompletedLinks[linkId] === today;
+                
+                if (!link.baseUrl) return; // Base URL olmayan linkleri gösterme
+
+                const linkHtml = `
+                    <div class="shortlink-item ${isCompletedToday ? 'disabled-item' : ''}">
+                        <div class="item-details">
+                            <p style="font-weight: 500;">${link.name || 'Untitled Link'}</p>
+                            <p style="font-size: 0.8rem; color: var(--color-text-light);">${isCompletedToday ? 'Completed today' : 'Available'}</p>
+                        </div>
+                        <div class="link-reward">$${(link.reward || 0).toFixed(4)}</div>
+                        ${isCompletedToday 
+                            ? `<button class="btn-success"><i class="fas fa-check"></i> Done</button>`
+                            : `<a href="${link.baseUrl}" target="_blank" class="btn-visit" onclick="handleLinkClick('${linkId}')">
+                                 <i class="fas fa-external-link-alt"></i> Visit
+                               </a>`
+                        }
+                    </div>
+                `;
+                listEl.innerHTML += linkHtml;
+            });
+        }
+
+        function handleLinkClick(linkId) {
+            if (window.Telegram && window.Telegram.WebApp) {
+                 window.Telegram.WebApp.showAlert("Warning: You must complete the shortlink! Your reward will be added automatically via Server-to-Server Callback after successful completion.");
+            }
+        }
+
+        async function requestWithdrawal() {
+            if (!window.Telegram || !window.Telegram.WebApp) { return; }
+            
+            const address = document.getElementById('usdtAddress').value.trim();
+            const amount = parseFloat(document.getElementById('withdrawAmount').value);
+
+            if (currentUsdBalance < MIN_WITHDRAWAL || amount < MIN_WITHDRAWAL || amount > currentUsdBalance || !address.startsWith('0x') || address.length < 42) {
+                window.Telegram.WebApp.showAlert(`Withdrawal failed: Check balance ($${currentUsdBalance.toFixed(2)} min:$${MIN_WITHDRAWAL.toFixed(2)}), amount, or address format (0x...).`);
+                return;
+            }
+            
+            const btn = document.querySelector('#withdraw-section .btn-primary');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+
+            try {
+                // Cloud Function API Call Simülasyonu
+                const response = await fetch(WITHDRAW_FUNCTION_URL, {
+                    method: 'POST', body: JSON.stringify({ userId: userId, amount: amount.toFixed(4), address: address }),
+                    headers: { 'Content-Type': 'application/json' },
+                });
+
+                if (response.ok) {
+                     window.Telegram.WebApp.showAlert("✅ Success: Withdrawal request submitted! It will be processed soon.");
+                     fetchData(); 
+                } else {
+                     const errorText = await response.text();
+                     window.Telegram.WebApp.showAlert(`Error: Withdrawal failed! ${errorText}`);
+                }
+            } catch (error) {
+                window.Telegram.WebApp.showAlert("Network Error: Could not connect to the withdrawal service.");
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Withdrawal Request';
+            }
+        }
+
+        async function addNewShortlink() {
+            if (!ADMIN_IDS.includes(userId)) return;
+
+            const linkName = document.getElementById('linkName').value.trim();
+            const rewardAmount = parseFloat(document.getElementById('rewardAmount').value);
+
+            if (!linkName || rewardAmount <= 0) { alert("Please enter a valid link name and reward amount."); return; }
+
+            const btn = document.querySelector('#admin-shortlinks-tab .btn-primary');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
+
+            try {
+                // Cloud Function API Call Simülasyonu
+                const response = await fetch(ADD_LINK_FUNCTION_URL, {
+                    method: 'POST', body: JSON.stringify({ name: linkName, reward: rewardAmount.toFixed(4) }),
+                    headers: { 'Content-Type': 'application/json' },
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    lastCreatedLinkId = result.linkId || 'TEST_LINK_ID_123'; 
+                    
+                    const finalCallbackUrl = `${CALLBACK_BASE_URL}/callback?link_id=${lastCreatedLinkId}&user_id={USER_ID_VARIABLE}`;
+                    
+                    document.getElementById('finalCallbackUrlOutput').value = finalCallbackUrl;
+                    document.getElementById('callback-result-card').style.display = 'block';
+                    
+                    if (window.Telegram && window.Telegram.WebApp) { window.Telegram.WebApp.showAlert(`✅ Link created! ID: ${lastCreatedLinkId}. Now add Base URL.`); }
+                    fetchData();
+                } else {
+                     const errorText = await response.text();
+                     alert(`Error: Link creation failed! ${errorText}`);
+                }
+            } catch (error) {
+                alert("Network Error: Could not connect to the link creation service.");
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-plus"></i> Generate Callback URL';
+            }
+        }
+
+        async function updateShortlinkBaseUrl() {
+            if (!ADMIN_IDS.includes(userId) || !lastCreatedLinkId) { alert("Please create a link first."); return; }
+
+            const baseLinkUrl = document.getElementById('baseLinkUrlInput').value.trim();
+
+            if (!baseLinkUrl || !baseLinkUrl.startsWith('http')) { alert("Please enter a valid Base URL (must start with http/https)."); return; }
+
+            const btn = document.querySelector('#callback-result-card .btn-primary');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+
+            try {
+                 // Cloud Function API Call Simülasyonu
+                 const response = await fetch(UPDATE_BASE_URL_FUNCTION_URL, {
+                     method: 'POST', body: JSON.stringify({ linkId: lastCreatedLinkId, baseUrl: baseLinkUrl }),
+                     headers: { 'Content-Type': 'application/json' },
+                 });
+
+                 if (response.ok) {
+                     if (window.Telegram && window.Telegram.WebApp) { window.Telegram.WebApp.showAlert("✅ Base URL saved successfully!"); }
+                     document.getElementById('callback-result-card').style.display = 'none';
+                     fetchData();
+                 } else {
+                      const errorText = await response.text();
+                      alert(`Error: Base URL update failed! ${errorText}`);
+                 }
+
+            } catch (error) {
+                alert("Network Error: Could not connect to the base URL update service.");
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-save"></i> Save Base URL to RTDB';
+            }
+        }
+
+        function copyReferralLink() {
+            const copyText = document.getElementById("referralLink");
+            copyText.select();
+            copyText.setSelectionRange(0, 99999); 
+            document.execCommand("copy");
+            
+            if (window.Telegram && window.Telegram.WebApp) {
+                window.Telegram.WebApp.showPopup({
+                    message: "Referral link copied to clipboard!",
+                    buttons: [{ id: 'ok', type: 'default', text: 'OK' }]
+                });
+            }
+        }
+        
+        // =======================================================
+        // ADMIN PANEL FUNCTIONS (RTDB Çekim Fonksiyonları)
         // =======================================================
         
         async function fetchAdminData(tabId) {
@@ -319,17 +516,14 @@
             const listEl = document.getElementById(tabId.replace('-tab', '-list'));
             if (!listEl) return;
             
-            // Kullanıcı verisi çekiliyorsa 'users', çekim talebi çekiliyorsa 'withdrawals'
             const dataType = tabId === 'admin-withdrawals-tab' ? 'withdrawals' : 'users';
             
             listEl.innerHTML = `<div style="padding: 15px; color: var(--color-primary);"><i class="fas fa-spinner fa-spin"></i> Loading data...</div>`;
 
             try {
-                // Admin yetkisiyle doğrudan RTDB'den veri çekme (Rules'ta Admin ID'ye izin verilmeli!)
                 const response = await fetch(`${RTDB_URL}/${dataType}.json?auth=${FIREBASE_API_KEY}`);
                 
                 if (!response.ok) {
-                     // Hata kodu 401 veya 403 ise RTDB Rules'dan geliyor
                      throw new Error(`RTDB Access Denied! Status: ${response.status}. Check Admin Rules for /${dataType}.`);
                 }
 
@@ -346,30 +540,34 @@
                     ? `Admin verisi yüklenemedi. Kural hatası: /${dataType} için OKUMA iznini kontrol edin.` 
                     : `Veritabanı bağlantı hatası: ${e.message}`;
                     
-                listEl.innerHTML = `<div style="padding: 15px; color: var(--color-danger);">
+                listEl.innerHTML = `<div style="padding: 15px; color: var(--color-danger); text-align: center;">
                                      <i class="fas fa-exclamation-triangle"></i> ${errorMessage}
                                    </div>`;
             }
         }
-
-        // ... (renderWithdrawals, renderUsers fonksiyonları aynı kalmıştır)
         
         function renderWithdrawals(withdrawals) {
             const listEl = document.getElementById('admin-withdrawal-list');
             listEl.innerHTML = '';
             
             if (!withdrawals || Object.keys(withdrawals).length === 0) {
-                 listEl.innerHTML = `<div style="padding: 15px; color: var(--color-text-light);">No pending or completed withdrawal requests found.</div>`;
+                 listEl.innerHTML = `<div style="padding: 15px; color: var(--color-text-light); text-align: center;">No pending or completed withdrawal requests found.</div>`;
                  return;
             }
             
-            Object.entries(withdrawals).forEach(([id, item]) => {
+            const sortedWithdrawals = Object.entries(withdrawals).sort(([, a], [, b]) => (b.timestamp || 0) - (a.timestamp || 0));
+
+            sortedWithdrawals.forEach(([, item]) => {
                 const statusClass = item.status === 'Paid' ? 'status-paid' : item.status === 'Rejected' ? 'status-rejected' : 'status-pending';
+                const date = item.timestamp ? new Date(item.timestamp).toLocaleString() : 'N/A';
                 const itemHtml = `
                     <div class="admin-list-item">
                         <div>
                             <span style="font-weight: 500; color: ${item.status === 'Pending' ? 'var(--color-danger)' : 'var(--color-text-dark)'};">$${(item.amount || 0).toFixed(2)} USD</span>
-                            <p style="font-size: 0.8rem; color: var(--color-text-light); margin: 2px 0;">UID: ${item.uid} | Adr: ${item.address ? item.address.substring(0, 8) + '...' : 'N/A'}</p>
+                            <p style="font-size: 0.8rem; color: var(--color-text-light); margin: 2px 0;">
+                                UID: ${item.uid} | ${date}
+                                <br>Adr: ${item.address ? item.address.substring(0, 8) + '...' + item.address.substring(item.address.length - 4) : 'N/A'}
+                            </p>
                         </div>
                         <span class="status-badge ${statusClass}">${item.status}</span>
                     </div>
@@ -383,7 +581,7 @@
              listEl.innerHTML = '';
              
              if (!users || Object.keys(users).length === 0) {
-                 listEl.innerHTML = `<div style="padding: 15px; color: var(--color-text-light);">No registered users found.</div>`;
+                 listEl.innerHTML = `<div style="padding: 15px; color: var(--color-text-light); text-align: center;">No registered users found.</div>`;
                  return;
              }
 
@@ -394,16 +592,16 @@
                      <div class="admin-list-item">
                          <div>
                              <span style="font-weight: 500;">UID: ${uid}</span>
-                             <p style="font-size: 0.8rem; color: var(--color-text-light); margin: 2px 0;">Balance: $${(user.balance || 0).toFixed(4)} | Refs: ${user.referrals || 0}</p>
+                             <p style="font-size: 0.8rem; color: var(--color-text-light); margin: 2px 0;">
+                                Joined: ${user.join_date ? new Date(user.join_date).toLocaleDateString() : 'N/A'} | Refs: ${user.referrals || 0}
+                             </p>
                          </div>
-                         <span style="font-size: 0.9rem; color: var(--color-primary);">${(user.balance || 0) >= MIN_WITHDRAWAL ? 'Ready to Withdraw' : 'Insufficient'}</span>
+                         <span style="font-size: 0.9rem; font-weight: 700; color: var(--color-primary);">$${(user.balance || 0).toFixed(4)}</span>
                      </div>
                  `;
                  listEl.innerHTML += itemHtml;
              });
         }
-        
-        // ... (Kalan fonksiyonlar aynı kalmıştır)
         
         function showAdminSection(tabId, element) {
             activeAdminTab = tabId;
@@ -417,11 +615,10 @@
             });
             element.classList.add('active');
             
-            // Yeni kodda, doğrudan RTDB'den çekim yapılır
-            fetchAdminData(tabId);
+            if (tabId !== 'admin-shortlinks-tab') {
+               fetchAdminData(tabId);
+            }
         }
-        
-        // ... (Tüm diğer fonksiyonlar buraya eklenmeli)
     </script>
 </body>
 </html>
