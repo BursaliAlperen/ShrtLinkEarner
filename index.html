@@ -46,10 +46,32 @@
         .btn-primary:hover { background-color: #0056b3; }
         .disabled-item { opacity: 0.6; }
         
+        /* Ana Sekme Navigasyonu */
         .tab-nav { display: flex; margin-bottom: 20px; border-bottom: 1px solid var(--border-color); overflow-x: auto; }
         .tab-nav button { flex-shrink: 0; background: none; border: none; padding: 10px 15px; cursor: pointer; font-size: 1rem; color: var(--color-text-light); border-bottom: 2px solid transparent; margin-right: 15px; font-weight: 500; }
         .tab-nav button.active { color: var(--color-primary); border-bottom: 2px solid var(--color-primary); font-weight: 700; }
 
+        /* Admin Butonu Konumlandırması */
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        #admin-icon-btn {
+            background: none;
+            border: none;
+            color: var(--color-danger);
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 5px;
+            display: none; /* Default hidden */
+        }
+        #admin-icon-btn:hover {
+             opacity: 0.8;
+        }
+
+        /* Admin Listeleri */
         .scrollable-list-container { max-height: 400px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 8px; background-color: var(--bg-card); margin-top: 15px; }
         .admin-list-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; border-bottom: 1px solid var(--border-color); }
         .admin-list-item:last-child { border-bottom: none; }
@@ -59,6 +81,7 @@
         .status-paid { background-color: var(--color-success); color: white; }
         .status-rejected { background-color: var(--color-danger); color: white; }
 
+        /* Admin Sekmeleri */
         .admin-tab-nav { display: flex; border-bottom: 1px solid var(--border-color); margin-bottom: 15px; overflow-x: auto; }
         .admin-tab-nav button { flex-shrink: 0; background: none; border: none; padding: 10px 15px; cursor: pointer; font-size: 0.9rem; color: var(--color-text-light); border-bottom: 2px solid transparent; margin-right: 10px; font-weight: 500; }
         .admin-tab-nav button.active { color: var(--color-danger); border-bottom: 2px solid var(--color-danger); font-weight: 700; }
@@ -67,6 +90,13 @@
 <body>
 
     <div class="container">
+        
+        <div class="header-content">
+            <div></div> 
+            <button id="admin-icon-btn" onclick="showSection('admin', this)">
+                <i class="fas fa-cog"></i>
+            </button>
+        </div>
         
         <div class="card main-balance">
             <div class="balance-label">Total Balance (USD)</div>
@@ -78,7 +108,6 @@
             <button class="active" onclick="showSection('dashboard', this)">Dashboard</button>
             <button onclick="showSection('shortlinks', this)">Shortlinks</button>
             <button onclick="showSection('withdraw', this)">Withdraw</button>
-            <button id="admin-tab-btn" style="display:none; color:#dc3545;" onclick="showSection('admin', this)">Admin <i class="fas fa-tools"></i></button> 
         </div>
 
         <div id="dashboard-section" class="section">
@@ -172,7 +201,6 @@
         const RTDB_URL = 'https://shrtlinkearner-default-rtdb.firebaseio.com'; 
         const MIN_WITHDRAWAL = 0.50; 
         
-        // !!! BOT NAME - INTEGRATED !!!
         const BOT_NAME = 'ShrtLinkEarner';
         
         // !!! REAL CLOUD FUNCTION URLS (MUST BE DEPLOYED) !!!
@@ -181,7 +209,7 @@
         const WITHDRAW_FUNCTION_URL = 'YOUR_WITHDRAW_FUNCTION_URL'; 
         const ADMIN_GET_DATA_FUNCTION_URL = 'YOUR_ADMIN_GET_DATA_FUNCTION_URL'; 
 
-        // !!! ADMIN TELEGRAM ID - INTEGRATED !!!
+        // !!! ADMIN TELEGRAM ID !!!
         const ADMIN_IDS = ['7904032877']; 
 
         // =======================================================
@@ -211,12 +239,12 @@
                 webApp.MainButton.setText("Refresh Balance").show().onClick(fetchData);
                 document.body.style.backgroundColor = webApp.themeParams.bg_color || 'var(--bg-light)';
                 
-                // ADMIN CONTROL
+                // ADMIN CONTROL: Show icon button
                 if (ADMIN_IDS.includes(userId)) {
-                    document.getElementById('admin-tab-btn').style.display = 'inline-block';
+                    document.getElementById('admin-icon-btn').style.display = 'block';
                     console.log(`Admin button enabled. User ID: ${userId}`);
                 } else {
-                    document.getElementById('admin-tab-btn').style.display = 'none';
+                    document.getElementById('admin-icon-btn').style.display = 'none';
                 }
                 
                 fetchData(); 
@@ -256,7 +284,6 @@
              document.getElementById('crypto-value-label').textContent = `~ ${currentUsdBalance.toFixed(8)} USDT`;
              document.getElementById('total-referrals').textContent = totalReferrals;
              document.getElementById('referral-earnings').textContent = `$${referralEarnings.toFixed(4)}`;
-             // Referral link using BOT_NAME
              document.getElementById('referralLink').value = `https://t.me/${BOT_NAME}?start=${userId}`;
              document.getElementById('withdraw-usd-balance').textContent = `$${currentUsdBalance.toFixed(4)}`;
              
@@ -308,7 +335,7 @@
         }
 
         // =======================================================
-        // WITHDRAWAL FUNCTIONS (REAL REQUEST)
+        // WITHDRAWAL FUNCTIONS
         // =======================================================
         async function requestWithdrawal() {
              const amount = parseFloat(document.getElementById('withdrawAmount').value);
@@ -489,26 +516,40 @@
 
         function showSection(sectionId, element) {
             activeSection = sectionId;
+            // Tüm ana bölümleri gizle
             document.querySelectorAll('.section').forEach(section => { section.style.display = 'none'; });
+            // Sadece seçilen ana bölümü göster
             document.getElementById(`${sectionId}-section`).style.display = 'block';
-            document.querySelectorAll('.tab-nav button').forEach(button => { button.classList.remove('active'); });
-            element.classList.add('active');
             
-            if (sectionId === 'shortlinks') { renderShortlinks(); } 
-            else if (sectionId === 'admin' && ADMIN_IDS.includes(userId)) {
+            // Ana navigasyondaki aktif butonu güncelle
+            document.querySelectorAll('.tab-nav button').forEach(button => { button.classList.remove('active'); });
+            if (sectionId !== 'admin') {
+                // Eğer admin değilse, tıklanan sekme düğmesini aktif et
+                if (element.classList.contains('tab-nav-button')) {
+                    element.classList.add('active');
+                }
+            } else {
+                 // Admin'e geçince, ana sekmeyi aktif yapma (sadece ikon butonu kullanılıyor)
+            }
+            
+            // Admin paneli için özel aksiyonlar
+            if (sectionId === 'admin' && ADMIN_IDS.includes(userId)) {
                  const defaultTabButton = document.querySelector('.admin-tab-nav button.active');
                  if (defaultTabButton) {
                      const tabIdMatch = defaultTabButton.getAttribute('onclick').match(/'([^']+)'/);
                      if (tabIdMatch) {
+                         // Default admin alt sekmesini yükle
                          showAdminSection(tabIdMatch[1], defaultTabButton);
                      }
                  }
             }
         }
         
+        // Başlangıçta tüm bölümleri gizle ve sadece dashboard'u göster
         document.getElementById('shortlinks-section').style.display = 'none';
         document.getElementById('withdraw-section').style.display = 'none';
         document.getElementById('admin-section').style.display = 'none';
+        document.getElementById('dashboard-section').style.display = 'block'; // Başlangıç sekmesi
         
     </script>
 </body>
