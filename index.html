@@ -10,7 +10,7 @@
 
     <style>
         /* ========================================= */
-        /* CSS STİLLERİ */
+        /* CSS STYLES */
         /* ========================================= */
         :root {
             --bg-light: #ffffff;
@@ -24,34 +24,10 @@
             --border-color: #dee2e6;
         }
 
-        body {
-            font-family: 'Roboto', sans-serif;
-            background-color: var(--bg-light);
-            color: var(--color-text-dark);
-            margin: 0;
-            padding: 0;
-        }
-        .container {
-            padding: 20px;
-            max-width: 800px;
-            margin: 0 auto;
-        }
-        h2 {
-            font-size: 1.8rem;
-            color: var(--color-primary);
-            border-bottom: 2px solid var(--border-color);
-            padding-bottom: 10px;
-            margin-top: 25px;
-            margin-bottom: 25px;
-        }
-        .card {
-            background-color: var(--bg-card);
-            padding: 20px;
-            border-radius: 12px;
-            margin-bottom: 20px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
-            border: 1px solid var(--border-color);
-        }
+        body { font-family: 'Roboto', sans-serif; background-color: var(--bg-light); color: var(--color-text-dark); margin: 0; padding: 0; }
+        .container { padding: 20px; max-width: 800px; margin: 0 auto; }
+        h2 { font-size: 1.8rem; color: var(--color-primary); border-bottom: 2px solid var(--border-color); padding-bottom: 10px; margin-top: 25px; margin-bottom: 25px; }
+        .card { background-color: var(--bg-card); padding: 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05); border: 1px solid var(--border-color); }
         .main-balance { text-align: center; padding: 30px 20px; }
         .balance-label { color: var(--color-text-light); font-weight: 500; }
         .balance-amount { font-size: 3.5rem; font-weight: 700; color: var(--color-primary); }
@@ -70,20 +46,11 @@
         .btn-primary:hover { background-color: #0056b3; }
         .disabled-item { opacity: 0.6; }
         
-        /* Ana Sekme Navigasyonu */
         .tab-nav { display: flex; margin-bottom: 20px; border-bottom: 1px solid var(--border-color); overflow-x: auto; }
         .tab-nav button { flex-shrink: 0; background: none; border: none; padding: 10px 15px; cursor: pointer; font-size: 1rem; color: var(--color-text-light); border-bottom: 2px solid transparent; margin-right: 15px; font-weight: 500; }
         .tab-nav button.active { color: var(--color-primary); border-bottom: 2px solid var(--color-primary); font-weight: 700; }
 
-        /* Admin Listeleri */
-        .scrollable-list-container {
-            max-height: 400px;
-            overflow-y: auto;
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            background-color: var(--bg-card); 
-            margin-top: 15px;
-        }
+        .scrollable-list-container { max-height: 400px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 8px; background-color: var(--bg-card); margin-top: 15px; }
         .admin-list-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; border-bottom: 1px solid var(--border-color); }
         .admin-list-item:last-child { border-bottom: none; }
         .admin-list-item:hover { background-color: #e9ecef; }
@@ -92,7 +59,6 @@
         .status-paid { background-color: var(--color-success); color: white; }
         .status-rejected { background-color: var(--color-danger); color: white; }
 
-        /* Admin Sekmeleri */
         .admin-tab-nav { display: flex; border-bottom: 1px solid var(--border-color); margin-bottom: 15px; overflow-x: auto; }
         .admin-tab-nav button { flex-shrink: 0; background: none; border: none; padding: 10px 15px; cursor: pointer; font-size: 0.9rem; color: var(--color-text-light); border-bottom: 2px solid transparent; margin-right: 10px; font-weight: 500; }
         .admin-tab-nav button.active { color: var(--color-danger); border-bottom: 2px solid var(--color-danger); font-weight: 700; }
@@ -155,42 +121,42 @@
             <h2><i class="fas fa-tools"></i> Admin Panel</h2>
             
             <div class="admin-tab-nav">
-                <button class="active" onclick="showAdminSection('admin-shortlinks-tab', this)">Shortlink Ekle</button>
-                <button onclick="showAdminSection('admin-withdrawals-tab', this)">Ödeme Talepleri</button>
-                <button onclick="showAdminSection('admin-users-tab', this)">Kullanıcı Listesi</button>
+                <button class="active" onclick="showAdminSection('admin-shortlinks-tab', this)">Add Shortlink</button>
+                <button onclick="showAdminSection('admin-withdrawals-tab', this)">Withdrawal Requests</button>
+                <button onclick="showAdminSection('admin-users-tab', this)">User List</button>
             </div>
             
             <div id="admin-shortlinks-tab" class="admin-tab-content">
                 <div class="card">
-                    <h3>Yeni Shortlink Ekle (RTDB'ye Kayıt)</h3>
-                    <label>Link Adı:</label>
+                    <h3>Add New Shortlink (Save to RTDB)</h3>
+                    <label>Link Name:</label>
                     <input type="text" id="linkName" class="input-style" placeholder="Daily Ad Link">
-                    <label>Ziyaret Linki (Base URL):</label>
+                    <label>Visit Link (Base URL):</label>
                     <input type="url" id="baseUrl" class="input-style" placeholder="https://shrtfly.com/xyz123">
-                    <label>Ödül Miktarı (USD):</label>
+                    <label>Reward Amount (USD):</label>
                     <input type="number" id="rewardAmount" class="input-style" value="0.015" step="0.001">
-                    <button class="btn-primary" onclick="addNewShortlink()"><i class="fas fa-plus"></i> Linki Oluştur ve Kaydet</button>
+                    <button class="btn-primary" onclick="addNewShortlink()"><i class="fas fa-plus"></i> Create and Save Link</button>
                 </div>
 
                 <div id="callback-result-card" class="card" style="display:none; border-left: 5px solid #ffc107;">
-                    <h3>✅ Link RTDB'ye Kaydedildi!</h3>
-                    <p style="color:var(--color-text-light);">BU URL'Yİ KOPYALAYIP Shortlink Platformunun S2S Postback/Callback ayarına YAPIŞTIRIN.</p>
+                    <h3>✅ Link Saved to RTDB!</h3>
+                    <p style="color:var(--color-text-light);">COPY THIS URL and PASTE it into the S2S Postback/Callback setting of the Shortlink Platform.</p>
                     <textarea id="finalCallbackUrlOutput" class="input-style" rows="4" readonly></textarea>
-                    <button class="btn-primary" onclick="copyCallbackUrl()" style="width:auto;"><i class="fas fa-copy"></i> Kopyala</button>
+                    <button class="btn-primary" onclick="copyCallbackUrl()" style="width:auto;"><i class="fas fa-copy"></i> Copy</button>
                 </div>
             </div>
 
             <div id="admin-withdrawals-tab" class="admin-tab-content" style="display:none;">
-                <h3 style="color: var(--color-danger);">Bekleyen Ödeme Talepleri</h3>
+                <h3 style="color: var(--color-danger);">Pending Withdrawal Requests</h3>
                 <div class="scrollable-list-container" id="admin-withdrawal-list">
-                     <div style="padding: 15px; color: var(--color-text-light);">Yükleniyor...</div>
+                     <div style="padding: 15px; color: var(--color-text-light);">Loading data...</div>
                 </div>
             </div>
 
             <div id="admin-users-tab" class="admin-tab-content" style="display:none;">
-                <h3>Tüm Kullanıcılar (Bakiye Sıralı)</h3>
+                <h3>All Users (Sorted by Balance)</h3>
                 <div class="scrollable-list-container" id="admin-user-list">
-                     <div style="padding: 15px; color: var(--color-text-light);">Yükleniyor...</div>
+                     <div style="padding: 15px; color: var(--color-text-light);">Loading data...</div>
                 </div>
             </div>
             
@@ -200,25 +166,28 @@
 
     <script>
         // =======================================================
-        // KRİTİK KONFİGÜRASYONLAR (LÜTFEN DEĞİŞTİRİN)
+        // CRITICAL CONFIGURATIONS (PLEASE CHANGE)
         // =======================================================
         const FIREBASE_API_KEY = 'AIzaSyCy1QPNWqd3nPnuECNRNNPtfNTOzq_0MxM'; 
         const RTDB_URL = 'https://shrtlinkearner-default-rtdb.firebaseio.com'; 
         const MIN_WITHDRAWAL = 0.50; 
         
-        // !!! DEPLOY SONRASI GİRİLMESİ GEREKEN GERÇEK URL'LER !!!
+        // !!! BOT NAME - INTEGRATED !!!
+        const BOT_NAME = 'ShrtLinkEarner';
+        
+        // !!! REAL CLOUD FUNCTION URLS (MUST BE DEPLOYED) !!!
         const ADD_LINK_FUNCTION_URL = 'YOUR_ADD_LINK_FUNCTION_URL'; 
         const CALLBACK_BASE_URL = 'YOUR_FIREBASE_CALLBACK_URL'; 
         const WITHDRAW_FUNCTION_URL = 'YOUR_WITHDRAW_FUNCTION_URL'; 
-        const ADMIN_GET_DATA_FUNCTION_URL = 'YOUR_ADMIN_GET_DATA_FUNCTION_URL'; // Cloud Function URL'si
+        const ADMIN_GET_DATA_FUNCTION_URL = 'YOUR_ADMIN_GET_DATA_FUNCTION_URL'; 
 
-        // SİZİN TELEGRAM ID'NİZ (LÜTFEN KONTROL EDİN VE DEĞİŞTİRİN)
+        // !!! ADMIN TELEGRAM ID - INTEGRATED !!!
         const ADMIN_IDS = ['7904032877']; 
 
         // =======================================================
-        // GLOBAL DURUM VE CORE FONKSİYONLAR
+        // GLOBAL STATE AND CORE FUNCTIONS
         // =======================================================
-        let userId = '999999999'; // Varsayılan ID
+        let userId = '999999999'; 
         let userCompletedLinks = {};
         let shortlinksData = {};
         let currentUsdBalance = 0.00;
@@ -234,7 +203,7 @@
                 const webApp = window.Telegram.WebApp;
                 webApp.ready();
                 
-                // ID'yi kesin olarak string formatında almaya çalışıyoruz
+                // Securely get user ID
                 if (webApp.initDataUnsafe && webApp.initDataUnsafe.user && webApp.initDataUnsafe.user.id) {
                     userId = webApp.initDataUnsafe.user.id.toString(); 
                 } 
@@ -242,13 +211,12 @@
                 webApp.MainButton.setText("Refresh Balance").show().onClick(fetchData);
                 document.body.style.backgroundColor = webApp.themeParams.bg_color || 'var(--bg-light)';
                 
-                // ADMIN KONTROLÜ VE BUTON GÖRÜNÜRLÜĞÜ
+                // ADMIN CONTROL
                 if (ADMIN_IDS.includes(userId)) {
                     document.getElementById('admin-tab-btn').style.display = 'inline-block';
-                    console.log(`Admin butonu etkinleştirildi! ID: ${userId}`);
+                    console.log(`Admin button enabled. User ID: ${userId}`);
                 } else {
                     document.getElementById('admin-tab-btn').style.display = 'none';
-                    console.log(`Admin butonu gizli. Kullanıcı ID: ${userId}`);
                 }
                 
                 fetchData(); 
@@ -259,7 +227,6 @@
         }
 
         async function fetchData() {
-            // ... (veri çekme mantığı aynı) ...
             try {
                 const userResponse = await fetch(`${RTDB_URL}/users/${userId}.json?auth=${FIREBASE_API_KEY}`);
                 const userData = await userResponse.json();
@@ -277,11 +244,10 @@
                 updateAllBalances();
                 
                 if (ADMIN_IDS.includes(userId) && activeSection === 'admin') {
-                    // Admin sekmesi aktifse, sadece ilgili sekmeyi güncelle
                     fetchAdminData(activeAdminTab);
                 }
             } catch (error) {
-                console.error("Veri çekme hatası:", error);
+                console.error("Data fetching error:", error);
             }
         }
 
@@ -290,7 +256,8 @@
              document.getElementById('crypto-value-label').textContent = `~ ${currentUsdBalance.toFixed(8)} USDT`;
              document.getElementById('total-referrals').textContent = totalReferrals;
              document.getElementById('referral-earnings').textContent = `$${referralEarnings.toFixed(4)}`;
-             document.getElementById('referralLink').value = `https://t.me/your_bot_name?start=${userId}`;
+             // Referral link using BOT_NAME
+             document.getElementById('referralLink').value = `https://t.me/${BOT_NAME}?start=${userId}`;
              document.getElementById('withdraw-usd-balance').textContent = `$${currentUsdBalance.toFixed(4)}`;
              
              if(activeSection === 'shortlinks') {
@@ -298,13 +265,12 @@
              }
         }
         
-        // ... (renderShortlinks ve closeMiniAppOnVisit aynı kalır) ...
         function renderShortlinks() { 
             const listEl = document.getElementById('shortlink-list');
             listEl.innerHTML = '';
             
             if (!shortlinksData || Object.keys(shortlinksData).length === 0) {
-                 listEl.innerHTML = `<div class="card" style="color: var(--color-text-light);">Aktif shortlink bulunamadı.</div>`;
+                 listEl.innerHTML = `<div class="card" style="color: var(--color-text-light);">No active shortlinks found.</div>`;
                  return;
             }
 
@@ -323,9 +289,9 @@
                         </div>
                         <div style="margin-left: 15px;">
                             ${isPassed 
-                                ? `<button class="btn-success"><i class="fas fa-check"></i> Tamamlandı</button>`
+                                ? `<button class="btn-success"><i class="fas fa-check"></i> Completed</button>`
                                 : `<a href="${finalVisitUrl}" target="_blank" class="btn-visit" onclick="closeMiniAppOnVisit();">
-                                     <i class="fas fa-external-link-alt"></i> Ziyaret Et
+                                     <i class="fas fa-external-link-alt"></i> Visit
                                    </a>`
                             }
                         </div>
@@ -342,50 +308,41 @@
         }
 
         // =======================================================
-        // WITHDRAWAL FUNCTIONS (GERÇEK İSTEK)
+        // WITHDRAWAL FUNCTIONS (REAL REQUEST)
         // =======================================================
         async function requestWithdrawal() {
              const amount = parseFloat(document.getElementById('withdrawAmount').value);
              const address = document.getElementById('usdtAddress').value.trim();
              
-             if(amount < MIN_WITHDRAWAL) {
-                 window.Telegram.WebApp.showAlert(`Minimum çekim $${MIN_WITHDRAWAL.toFixed(2)} USD'dir.`); return;
-             }
-             if(amount > currentUsdBalance) {
-                 window.Telegram.WebApp.showAlert("Yetersiz bakiye!"); return;
-             }
-             if(address.length < 20 || !address.startsWith('0x')) {
-                 window.Telegram.WebApp.showAlert("Geçersiz USDT (MATIC) adresi!"); return;
-             }
+             if(amount < MIN_WITHDRAWAL) { window.Telegram.WebApp.showAlert(`Minimum withdrawal is $${MIN_WITHDRAWAL.toFixed(2)} USD.`); return; }
+             if(amount > currentUsdBalance) { window.Telegram.WebApp.showAlert("Insufficient balance!"); return; }
+             if(address.length < 20 || !address.startsWith('0x')) { window.Telegram.WebApp.showAlert("Invalid USDT (MATIC) address!"); return; }
              
-             window.Telegram.WebApp.MainButton.setText("Talebiniz Gönderiliyor...").show().disable();
+             window.Telegram.WebApp.MainButton.setText("Submitting Request...").show().disable();
              
              try {
                 const response = await fetch(WITHDRAW_FUNCTION_URL, {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        data: { userId: userId, amount: amount, address: address, currency: 'USDT_MATIC' }
-                    })
+                    body: JSON.stringify({ data: { userId: userId, amount: amount, address: address, currency: 'USDT_MATIC' } })
                 });
                 
                 const result = await response.json();
                 
                 if (result.data && result.data.status === 'success') {
-                    window.Telegram.WebApp.showAlert("Çekim talebiniz başarıyla oluşturuldu ve işlenmeyi bekliyor.");
+                    window.Telegram.WebApp.showAlert("Your withdrawal request has been successfully created and is pending processing.");
                     fetchData(); 
                 } else {
-                    window.Telegram.WebApp.showAlert(`Hata: ${result.error?.message || 'Çekim isteği sunucudan reddedildi.'}`);
+                    window.Telegram.WebApp.showAlert(`Error: ${result.error?.message || 'Withdrawal request denied by server.'}`);
                 }
              } catch (e) {
-                 window.Telegram.WebApp.showAlert("Çekim talebi gönderilemedi. Sunucu bağlantı hatası.");
+                 window.Telegram.WebApp.showAlert("Failed to send withdrawal request. Server connection error.");
              } finally {
                 window.Telegram.WebApp.MainButton.setText("Refresh Balance").enable();
              }
         }
 
-
         // =======================================================
-        // ADMIN PANELİ FONKSİYONLARI
+        // ADMIN PANEL FUNCTIONS
         // =======================================================
         
         function showAdminSection(tabId, element) {
@@ -404,22 +361,18 @@
         }
         
         async function fetchAdminData(tabId) {
-            if (!ADMIN_IDS.includes(userId)) return;
+            if (!ADMIN_IDS.includes(userId) || tabId === 'admin-shortlinks-tab') return;
 
             const listEl = document.getElementById(tabId.replace('-tab', '-list'));
             if (!listEl) return;
             
-            // Eğer kısa link ekleme sekmesiyse listeyi yenileme
-            if (tabId === 'admin-shortlinks-tab') return;
-            
-            listEl.innerHTML = `<div style="padding: 15px; color: var(--color-primary);"><i class="fas fa-spinner fa-spin"></i> Veriler yükleniyor...</div>`;
+            listEl.innerHTML = `<div style="padding: 15px; color: var(--color-primary);"><i class="fas fa-spinner fa-spin"></i> Loading data...</div>`;
 
             try {
                 const dataType = tabId === 'admin-withdrawals-tab' ? 'withdrawals' : 'users';
                 
                 const response = await fetch(ADMIN_GET_DATA_FUNCTION_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ data: { dataType: dataType, adminId: userId } }) 
                 });
                 
@@ -432,8 +385,7 @@
                     renderUsers(data);
                 }
             } catch (e) {
-                listEl.innerHTML = `<div style="padding: 15px; color: var(--color-danger);">Hata: Admin verileri çekilemedi. URL'yi kontrol edin.</div>`;
-                console.error("Admin data fetch error:", e);
+                listEl.innerHTML = `<div style="padding: 15px; color: var(--color-danger);">Error: Could not fetch admin data. Check your URL.</div>`;
             }
         }
 
@@ -442,7 +394,7 @@
             listEl.innerHTML = '';
             
             if (Object.keys(withdrawals).length === 0) {
-                 listEl.innerHTML = `<div style="padding: 15px; color: var(--color-text-light);">Bekleyen veya tamamlanmış ödeme talebi yok.</div>`;
+                 listEl.innerHTML = `<div style="padding: 15px; color: var(--color-text-light);">No pending or completed withdrawal requests.</div>`;
                  return;
             }
             
@@ -452,7 +404,7 @@
                     <div class="admin-list-item">
                         <div>
                             <span style="font-weight: 500; color: ${item.status === 'Pending' ? 'var(--color-danger)' : 'var(--color-text-dark)'};">$${(item.amount || 0).toFixed(2)} USD</span>
-                            <p style="font-size: 0.8rem; color: var(--color-text-light); margin: 2px 0;">UID: ${item.uid} | Adres: ${item.address.substring(0, 8)}...</p>
+                            <p style="font-size: 0.8rem; color: var(--color-text-light); margin: 2px 0;">UID: ${item.uid} | Address: ${item.address.substring(0, 8)}...</p>
                         </div>
                         <span class="status-badge ${statusClass}">${item.status}</span>
                     </div>
@@ -466,7 +418,7 @@
              listEl.innerHTML = '';
              
              if (Object.keys(users).length === 0) {
-                 listEl.innerHTML = `<div style="padding: 15px; color: var(--color-text-light);">Kayıtlı kullanıcı yok.</div>`;
+                 listEl.innerHTML = `<div style="padding: 15px; color: var(--color-text-light);">No registered users.</div>`;
                  return;
              }
 
@@ -477,28 +429,24 @@
                      <div class="admin-list-item">
                          <div>
                              <span style="font-weight: 500;">UID: ${uid}</span>
-                             <p style="font-size: 0.8rem; color: var(--color-text-light); margin: 2px 0;">Bakiye: $${(user.balance || 0).toFixed(4)} | Ref: ${user.referrals || 0}</p>
+                             <p style="font-size: 0.8rem; color: var(--color-text-light); margin: 2px 0;">Balance: $${(user.balance || 0).toFixed(4)} | Refs: ${user.referrals || 0}</p>
                          </div>
-                         <span style="font-size: 0.9rem; color: var(--color-primary);">${(user.balance || 0) >= MIN_WITHDRAWAL ? 'Çekim Hazır' : 'Yetersiz'}</span>
+                         <span style="font-size: 0.9rem; color: var(--color-primary);">${(user.balance || 0) >= MIN_WITHDRAWAL ? 'Ready to Withdraw' : 'Insufficient'}</span>
                      </div>
                  `;
                  listEl.innerHTML += itemHtml;
              });
         }
 
-
-        // ... (addNewShortlink, copyCallbackUrl, copyReferralLink ve showSection fonksiyonları aynı kalır) ...
         async function addNewShortlink() {
-            if (!ADMIN_IDS.includes(userId)) { window.Telegram.WebApp.showAlert("Yetkisiz işlem!"); return; }
+            if (!ADMIN_IDS.includes(userId)) { window.Telegram.WebApp.showAlert("Unauthorized operation!"); return; }
             const name = document.getElementById('linkName').value;
             const baseUrl = document.getElementById('baseUrl').value;
             const reward = document.getElementById('rewardAmount').value;
 
-            if (!name || !baseUrl || isNaN(parseFloat(reward)) || parseFloat(reward) <= 0) {
-                window.Telegram.WebApp.showAlert("Lütfen tüm alanları doğru doldurun."); return;
-            }
+            if (!name || !baseUrl || isNaN(parseFloat(reward)) || parseFloat(reward) <= 0) { window.Telegram.WebApp.showAlert("Please fill in all fields correctly."); return; }
             document.getElementById('callback-result-card').style.display = 'none';
-            window.Telegram.WebApp.MainButton.setText("Oluşturuluyor...").show().disable();
+            window.Telegram.WebApp.MainButton.setText("Creating...").show().disable();
 
             try {
                 const dataToSend = { name: name, base_url: baseUrl, reward: reward, callback_base_url: CALLBACK_BASE_URL, userId: userId };
@@ -511,13 +459,13 @@
                 if (result.data && result.data.status === 'success') {
                     document.getElementById('finalCallbackUrlOutput').value = result.data.finalCallbackUrl;
                     document.getElementById('callback-result-card').style.display = 'block';
-                    window.Telegram.WebApp.showAlert(`Shortlink başarıyla kaydedildi! ID: ${result.data.linkId}`);
+                    window.Telegram.WebApp.showAlert(`Shortlink successfully saved! ID: ${result.data.linkId}`);
                     fetchData(); 
                 } else {
-                    window.Telegram.WebApp.showAlert(`Hata: ${result.error?.message || 'Link eklenirken sunucu hatası.'}`);
+                    window.Telegram.WebApp.showAlert(`Error: ${result.error?.message || 'Server error while adding link.'}`);
                 }
             } catch (error) {
-                window.Telegram.WebApp.showAlert("Sunucuya bağlanılamadı. URL'leri kontrol edin.");
+                window.Telegram.WebApp.showAlert("Could not connect to server. Check your URLs.");
             } finally {
                 window.Telegram.WebApp.MainButton.setText("Refresh Balance").enable();
             }
@@ -528,7 +476,7 @@
             textarea.select();
             textarea.setSelectionRange(0, 99999); 
             navigator.clipboard.writeText(textarea.value);
-            window.Telegram.WebApp.showAlert("Callback URL panoya kopyalandı!");
+            window.Telegram.WebApp.showAlert("Callback URL copied to clipboard!");
         }
 
         function copyReferralLink() {
@@ -536,7 +484,7 @@
             linkInput.select();
             linkInput.setSelectionRange(0, 99999); 
             navigator.clipboard.writeText(linkInput.value);
-            window.Telegram.WebApp.showPopup({message: 'Referans linki panoya kopyalandı!'});
+            window.Telegram.WebApp.showPopup({message: 'Referral link copied to clipboard!'});
         }
 
         function showSection(sectionId, element) {
@@ -550,7 +498,6 @@
             else if (sectionId === 'admin' && ADMIN_IDS.includes(userId)) {
                  const defaultTabButton = document.querySelector('.admin-tab-nav button.active');
                  if (defaultTabButton) {
-                     // Sekme ID'sini al ve admin verisini çek
                      const tabIdMatch = defaultTabButton.getAttribute('onclick').match(/'([^']+)'/);
                      if (tabIdMatch) {
                          showAdminSection(tabIdMatch[1], defaultTabButton);
@@ -559,7 +506,6 @@
             }
         }
         
-        // Başlangıçta tüm bölümleri gizle
         document.getElementById('shortlinks-section').style.display = 'none';
         document.getElementById('withdraw-section').style.display = 'none';
         document.getElementById('admin-section').style.display = 'none';
