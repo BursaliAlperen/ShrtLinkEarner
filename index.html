@@ -33,7 +33,17 @@
         .balance-amount { font-size: 3.5rem; font-weight: 700; color: var(--color-primary); }
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; }
         .stat-value { font-size: 1.5rem; font-weight: 700; margin-top: 5px; }
-        .shortlink-item { display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px solid var(--border-color); }
+        
+        /* Shortlink Listesi İçin Kaydırılabilir Alan */
+        .shortlink-list-container {
+             max-height: 400px;
+             overflow-y: auto;
+             border: 1px solid var(--border-color);
+             border-radius: 8px;
+             padding: 0 10px;
+        }
+
+        .shortlink-item { display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px solid var(--border-color); }
         .shortlink-item:last-child { border-bottom: none; }
         .link-reward { font-weight: 700; color: var(--color-success); }
         .btn-visit, .btn-success { padding: 8px 15px; border: none; border-radius: 6px; font-weight: 500; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; transition: opacity 0.2s; }
@@ -46,12 +56,10 @@
         .btn-primary:hover { background-color: #0056b3; }
         .disabled-item { opacity: 0.6; }
         
-        /* Ana Sekme Navigasyonu */
         .tab-nav { display: flex; margin-bottom: 20px; border-bottom: 1px solid var(--border-color); overflow-x: auto; }
         .tab-nav button { flex-shrink: 0; background: none; border: none; padding: 10px 15px; cursor: pointer; font-size: 1rem; color: var(--color-text-light); border-bottom: 2px solid transparent; margin-right: 15px; font-weight: 500; }
         .tab-nav button.active { color: var(--color-primary); border-bottom: 2px solid var(--color-primary); font-weight: 700; }
 
-        /* Admin Butonu Konumlandırması */
         .header-content {
             display: flex;
             justify-content: space-between;
@@ -65,26 +73,20 @@
             font-size: 1.5rem;
             cursor: pointer;
             padding: 5px;
-            display: none; /* Default hidden */
-        }
-        #admin-icon-btn:hover {
-             opacity: 0.8;
+            display: none; 
         }
 
-        /* Admin Listeleri */
         .scrollable-list-container { max-height: 400px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 8px; background-color: var(--bg-card); margin-top: 15px; }
         .admin-list-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; border-bottom: 1px solid var(--border-color); }
         .admin-list-item:last-child { border-bottom: none; }
-        .admin-list-item:hover { background-color: #e9ecef; }
+        .admin-tab-nav { display: flex; border-bottom: 1px solid var(--border-color); margin-bottom: 15px; overflow-x: auto; }
+        .admin-tab-nav button { flex-shrink: 0; background: none; border: none; padding: 10px 15px; cursor: pointer; font-size: 0.9rem; color: var(--color-text-light); border-bottom: 2px solid transparent; margin-right: 10px; font-weight: 500; }
+        .admin-tab-nav button.active { color: var(--color-danger); border-bottom: 2px solid var(--color-danger); font-weight: 700; }
         .status-badge { padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: 500; }
         .status-pending { background-color: var(--color-warning); color: var(--color-text-dark); }
         .status-paid { background-color: var(--color-success); color: white; }
         .status-rejected { background-color: var(--color-danger); color: white; }
 
-        /* Admin Sekmeleri */
-        .admin-tab-nav { display: flex; border-bottom: 1px solid var(--border-color); margin-bottom: 15px; overflow-x: auto; }
-        .admin-tab-nav button { flex-shrink: 0; background: none; border: none; padding: 10px 15px; cursor: pointer; font-size: 0.9rem; color: var(--color-text-light); border-bottom: 2px solid transparent; margin-right: 10px; font-weight: 500; }
-        .admin-tab-nav button.active { color: var(--color-danger); border-bottom: 2px solid var(--color-danger); font-weight: 700; }
     </style>
 </head>
 <body>
@@ -124,9 +126,11 @@
 
         <div id="shortlinks-section" class="section" style="display:none;">
              <div class="card">
-                <h2><i class="fas fa-link"></i> Shortlinks</h2>
-                <p style="color: var(--color-text-light); font-size: 0.9rem;">The reward is added instantly and securely (S2S Callback).</p>
-                <div id="shortlink-list"></div>
+                <h2><i class="fas fa-link"></i> Available Shortlinks</h2>
+                <p style="color: var(--color-text-light); font-size: 0.9rem;">Complete a shortlink to earn reward instantly.</p>
+                <div class="shortlink-list-container">
+                    <div id="shortlink-list"></div>
+                </div>
             </div>
         </div>
         
@@ -150,42 +154,43 @@
             <h2><i class="fas fa-tools"></i> Admin Panel</h2>
             
             <div class="admin-tab-nav">
-                <button class="active" onclick="showAdminSection('admin-shortlinks-tab', this)">Add Shortlink</button>
+                <button class="active" onclick="showAdminSection('admin-shortlinks-tab', this)">Create Link</button>
                 <button onclick="showAdminSection('admin-withdrawals-tab', this)">Withdrawal Requests</button>
                 <button onclick="showAdminSection('admin-users-tab', this)">User List</button>
             </div>
             
             <div id="admin-shortlinks-tab" class="admin-tab-content">
                 <div class="card">
-                    <h3>Add New Shortlink (Save to RTDB)</h3>
+                    <h3>Create New Shortlink Callback</h3>
+                    <p style="color: var(--color-text-light); font-size: 0.9rem; margin-bottom: 15px;">Enter the name and reward. Then use the generated Callback URL on your Shortlink Provider's website.</p>
                     <label>Link Name:</label>
                     <input type="text" id="linkName" class="input-style" placeholder="Daily Ad Link">
-                    <label>Visit Link (Base URL):</label>
-                    <input type="url" id="baseUrl" class="input-style" placeholder="https://shrtfly.com/xyz123">
                     <label>Reward Amount (USD):</label>
                     <input type="number" id="rewardAmount" class="input-style" value="0.015" step="0.001">
-                    <button class="btn-primary" onclick="addNewShortlink()"><i class="fas fa-plus"></i> Create and Save Link</button>
+                    <button class="btn-primary" onclick="addNewShortlink()"><i class="fas fa-plus"></i> Generate Callback URL</button>
                 </div>
 
                 <div id="callback-result-card" class="card" style="display:none; border-left: 5px solid #ffc107;">
-                    <h3>✅ Link Saved to RTDB!</h3>
-                    <p style="color:var(--color-text-light);">COPY THIS URL and PASTE it into the S2S Postback/Callback setting of the Shortlink Platform.</p>
+                    <h3>✅ Link Created!</h3>
+                    <p style="color:var(--color-text-light);">**CRITICAL:** Copy the URL below and paste it into your Shortlink platform's S2S Postback setting.</p>
                     <textarea id="finalCallbackUrlOutput" class="input-style" rows="4" readonly></textarea>
-                    <button class="btn-primary" onclick="copyCallbackUrl()" style="width:auto;"><i class="fas fa-copy"></i> Copy</button>
+                    <label>Paste the Shortlink's **Base URL** here (e.g., https://shrtfly.com/xyz123)</label>
+                    <input type="url" id="baseLinkUrlInput" class="input-style" placeholder="https://shrtfly.com/xyz123">
+                    <button class="btn-primary" onclick="updateShortlinkBaseUrl()"><i class="fas fa-save"></i> Save Base URL to RTDB</button>
                 </div>
             </div>
 
             <div id="admin-withdrawals-tab" class="admin-tab-content" style="display:none;">
                 <h3 style="color: var(--color-danger);">Pending Withdrawal Requests</h3>
                 <div class="scrollable-list-container" id="admin-withdrawal-list">
-                     <div style="padding: 15px; color: var(--color-text-light);">Loading data...</div>
+                     <div style="padding: 15px; color: var(--color-text-light);">No pending requests found (or function URL is missing).</div>
                 </div>
             </div>
 
             <div id="admin-users-tab" class="admin-tab-content" style="display:none;">
                 <h3>All Users (Sorted by Balance)</h3>
                 <div class="scrollable-list-container" id="admin-user-list">
-                     <div style="padding: 15px; color: var(--color-text-light);">Loading data...</div>
+                     <div style="padding: 15px; color: var(--color-text-light);">No users found (or function URL is missing).</div>
                 </div>
             </div>
             
@@ -208,6 +213,8 @@
         const CALLBACK_BASE_URL = 'YOUR_FIREBASE_CALLBACK_URL'; 
         const WITHDRAW_FUNCTION_URL = 'YOUR_WITHDRAW_FUNCTION_URL'; 
         const ADMIN_GET_DATA_FUNCTION_URL = 'YOUR_ADMIN_GET_DATA_FUNCTION_URL'; 
+        // Yeni Cloud Function URL'i: Base URL'yi güncellemek için kullanılacak
+        const UPDATE_BASE_URL_FUNCTION_URL = 'YOUR_UPDATE_BASE_URL_FUNCTION_URL'; 
 
         // !!! ADMIN TELEGRAM ID !!!
         const ADMIN_IDS = ['7904032877']; 
@@ -223,6 +230,7 @@
         let referralEarnings = 0.00;
         let activeSection = 'dashboard';
         let activeAdminTab = 'admin-shortlinks-tab';
+        let lastCreatedLinkId = null; // Yeni oluşturulan link ID'sini tutmak için
 
         document.addEventListener('DOMContentLoaded', initializeMiniApp);
 
@@ -231,7 +239,6 @@
                 const webApp = window.Telegram.WebApp;
                 webApp.ready();
                 
-                // Securely get user ID
                 if (webApp.initDataUnsafe && webApp.initDataUnsafe.user && webApp.initDataUnsafe.user.id) {
                     userId = webApp.initDataUnsafe.user.id.toString(); 
                 } 
@@ -239,10 +246,8 @@
                 webApp.MainButton.setText("Refresh Balance").show().onClick(fetchData);
                 document.body.style.backgroundColor = webApp.themeParams.bg_color || 'var(--bg-light)';
                 
-                // ADMIN CONTROL: Show icon button
                 if (ADMIN_IDS.includes(userId)) {
                     document.getElementById('admin-icon-btn').style.display = 'block';
-                    console.log(`Admin button enabled. User ID: ${userId}`);
                 } else {
                     document.getElementById('admin-icon-btn').style.display = 'none';
                 }
@@ -256,6 +261,7 @@
 
         async function fetchData() {
             try {
+                // Fetch User Data
                 const userResponse = await fetch(`${RTDB_URL}/users/${userId}.json?auth=${FIREBASE_API_KEY}`);
                 const userData = await userResponse.json();
 
@@ -263,9 +269,11 @@
                     currentUsdBalance = userData.balance || 0;
                     totalReferrals = userData.referrals || 0;
                     referralEarnings = userData.referral_earnings || 0;
-                    userCompletedLinks = userData.completed_links || {};
+                    // completed_links, linkId'ye göre son tamamlanma zamanını tutar
+                    userCompletedLinks = userData.completed_links || {}; 
                 }
 
+                // Fetch Shortlinks Data
                 const linksResponse = await fetch(`${RTDB_URL}/shortlinks.json?auth=${FIREBASE_API_KEY}`);
                 shortlinksData = await linksResponse.json();
                 
@@ -292,33 +300,50 @@
              }
         }
         
+        // =======================================================
+        // SHORTLINK RENDER (Geliştirilmiş)
+        // =======================================================
         function renderShortlinks() { 
             const listEl = document.getElementById('shortlink-list');
             listEl.innerHTML = '';
             
             if (!shortlinksData || Object.keys(shortlinksData).length === 0) {
-                 listEl.innerHTML = `<div class="card" style="color: var(--color-text-light);">No active shortlinks found.</div>`;
+                 listEl.innerHTML = `<div style="padding: 15px; color: var(--color-text-light);">No active shortlinks found.</div>`;
                  return;
             }
 
+            // Mevcut zaman (timestamp)
+            const currentTime = Date.now();
+            // 24 saat (86400000 milisaniye)
+            const twentyFourHours = 86400000; 
+
             Object.entries(shortlinksData).forEach(([linkId, linkData]) => {
-                const isPassed = userCompletedLinks[linkId] === true; 
+                // Link'in base_url'si yoksa gösterilmez (Admin Base URL'yi kaydetmeyi unutmuştur)
+                if (!linkData.base_url) return; 
+
+                // Kullanıcının son tamamlanma zamanını al
+                const lastCompletedTime = userCompletedLinks[linkId] || 0;
+                // Yeniden yapılıp yapılamayacağını kontrol et (Örneğin 24 saatte bir)
+                const isReady = (currentTime - lastCompletedTime) > twentyFourHours; 
+                // Örnek olarak bu kontrolü yaptık. Gerçekte isPassed kontrolü gerekmez, sadece limit kontrolü yeter.
+                
                 const finalVisitUrl = `${linkData.base_url}?sub_id=${userId}`; 
 
                 const itemHtml = `
-                    <div class="shortlink-item ${isPassed ? 'disabled-item' : ''}">
+                    <div class="shortlink-item ${!isReady ? 'disabled-item' : ''}">
                         <div class="item-details">
                             <p style="font-weight: 500;">${linkData.name}</p>
-                            <p style="font-size: 0.8rem; color: var(--color-text-light);">Link ID: ${linkId}</p>
-                        </div>
-                        <div class="link-reward">
-                            +$${linkData.reward.toFixed(3)}
+                            <p style="font-size: 0.8rem; color: var(--color-text-light);">
+                                Reward: <strong style="color: var(--color-success);">$${linkData.reward.toFixed(3)} USDT</strong>
+                            </p>
                         </div>
                         <div style="margin-left: 15px;">
-                            ${isPassed 
-                                ? `<button class="btn-success"><i class="fas fa-check"></i> Completed</button>`
+                            ${!isReady 
+                                ? `<button class="btn-success" disabled>
+                                     <i class="fas fa-history"></i> Cooldown (24h)
+                                   </button>`
                                 : `<a href="${finalVisitUrl}" target="_blank" class="btn-visit" onclick="closeMiniAppOnVisit();">
-                                     <i class="fas fa-external-link-alt"></i> Visit
+                                     <i class="fas fa-external-link-alt"></i> Visit Link
                                    </a>`
                             }
                         </div>
@@ -326,9 +351,14 @@
                 `;
                 listEl.innerHTML += itemHtml;
             });
+
+             if (listEl.innerHTML === '') {
+                 listEl.innerHTML = `<div style="padding: 15px; color: var(--color-text-light);">All links completed or no links available.</div>`;
+             }
         }
         
         function closeMiniAppOnVisit() {
+             // Kullanıcı Shortlink'e giderken Mini App'i kapatır
              if (window.Telegram && window.Telegram.WebApp) {
                  window.Telegram.WebApp.close();
              }
@@ -348,6 +378,7 @@
              window.Telegram.WebApp.MainButton.setText("Submitting Request...").show().disable();
              
              try {
+                // Cloud Function'a istek
                 const response = await fetch(WITHDRAW_FUNCTION_URL, {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ data: { userId: userId, amount: amount, address: address, currency: 'USDT_MATIC' } })
@@ -362,15 +393,105 @@
                     window.Telegram.WebApp.showAlert(`Error: ${result.error?.message || 'Withdrawal request denied by server.'}`);
                 }
              } catch (e) {
-                 window.Telegram.WebApp.showAlert("Failed to send withdrawal request. Server connection error.");
+                 window.Telegram.WebApp.showAlert("Failed to send withdrawal request. Server connection error. Check WITHDRAW_FUNCTION_URL.");
              } finally {
                 window.Telegram.WebApp.MainButton.setText("Refresh Balance").enable();
              }
         }
 
         // =======================================================
-        // ADMIN PANEL FUNCTIONS
+        // ADMIN PANEL FUNCTIONS (Geliştirilmiş Akış)
         // =======================================================
+        
+        // 1. Yeni Shortlink Callback URL'si Oluştur
+        async function addNewShortlink() {
+            if (!ADMIN_IDS.includes(userId)) { window.Telegram.WebApp.showAlert("Unauthorized operation!"); return; }
+            const name = document.getElementById('linkName').value;
+            const reward = document.getElementById('rewardAmount').value;
+
+            if (!name || isNaN(parseFloat(reward)) || parseFloat(reward) <= 0) { window.Telegram.WebApp.showAlert("Please fill in Link Name and valid Reward Amount."); return; }
+            
+            document.getElementById('callback-result-card').style.display = 'none';
+            window.Telegram.WebApp.MainButton.setText("Generating Callback...").show().disable();
+
+            try {
+                // Cloud Function'a callback URL oluşturma isteği
+                const dataToSend = { name: name, reward: reward, callback_base_url: CALLBACK_BASE_URL, adminId: userId };
+                const response = await fetch(ADD_LINK_FUNCTION_URL, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ data: dataToSend }) 
+                });
+                const result = await response.json();
+                
+                if (result.data && result.data.status === 'success') {
+                    lastCreatedLinkId = result.data.linkId; // ID'yi Base URL adımı için sakla
+                    document.getElementById('finalCallbackUrlOutput').value = result.data.finalCallbackUrl;
+                    document.getElementById('callback-result-card').style.display = 'block';
+                    window.Telegram.WebApp.showAlert(`Callback URL successfully generated! Now enter the Base URL.`);
+                } else {
+                    window.Telegram.WebApp.showAlert(`Error: ${result.error?.message || 'Server error while generating link.'}`);
+                }
+            } catch (error) {
+                window.Telegram.WebApp.showAlert("Could not connect to server. Check ADD_LINK_FUNCTION_URL.");
+            } finally {
+                window.Telegram.WebApp.MainButton.setText("Refresh Balance").enable();
+            }
+        }
+
+        // 2. Shortlink Base URL'sini Kaydet
+        async function updateShortlinkBaseUrl() {
+            if (!ADMIN_IDS.includes(userId) || !lastCreatedLinkId) { window.Telegram.WebApp.showAlert("Unauthorized or no Link ID created yet!"); return; }
+
+            const baseUrl = document.getElementById('baseLinkUrlInput').value.trim();
+
+            if (!baseUrl || !baseUrl.startsWith('http')) { 
+                window.Telegram.WebApp.showAlert("Please enter a valid Shortlink Base URL."); 
+                return;
+            }
+
+            window.Telegram.WebApp.MainButton.setText("Saving Base URL...").show().disable();
+
+            try {
+                 // Cloud Function'a Base URL'yi güncelleme isteği
+                const dataToSend = { linkId: lastCreatedLinkId, baseUrl: baseUrl, adminId: userId };
+                const response = await fetch(UPDATE_BASE_URL_FUNCTION_URL, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ data: dataToSend }) 
+                });
+                const result = await response.json();
+
+                if (result.data && result.data.status === 'success') {
+                    window.Telegram.WebApp.showAlert(`Base URL successfully saved for Link ID: ${lastCreatedLinkId}. Link is now active!`);
+                    document.getElementById('callback-result-card').style.display = 'none';
+                    lastCreatedLinkId = null; // İşlem tamamlandı
+                    fetchData(); 
+                } else {
+                    window.Telegram.WebApp.showAlert(`Error: ${result.error?.message || 'Server error while saving Base URL.'}`);
+                }
+            } catch (error) {
+                window.Telegram.WebApp.showAlert("Could not connect to server. Check UPDATE_BASE_URL_FUNCTION_URL.");
+            } finally {
+                window.Telegram.WebApp.MainButton.setText("Refresh Balance").enable();
+            }
+        }
+        
+        // ... (Kalan Admin Fonksiyonları)
+        
+        function copyCallbackUrl() {
+            const textarea = document.getElementById('finalCallbackUrlOutput');
+            textarea.select();
+            textarea.setSelectionRange(0, 99999); 
+            navigator.clipboard.writeText(textarea.value);
+            window.Telegram.WebApp.showAlert("Callback URL copied to clipboard!");
+        }
+
+        function copyReferralLink() {
+            const linkInput = document.getElementById('referralLink');
+            linkInput.select();
+            linkInput.setSelectionRange(0, 99999); 
+            navigator.clipboard.writeText(linkInput.value);
+            window.Telegram.WebApp.showPopup({message: 'Referral link copied to clipboard!'});
+        }
         
         function showAdminSection(tabId, element) {
             activeAdminTab = tabId;
@@ -387,6 +508,7 @@
             fetchAdminData(tabId);
         }
         
+        // Admin Veri Çekme Fonksiyonu (Hata Düzeltmeleri Dahil)
         async function fetchAdminData(tabId) {
             if (!ADMIN_IDS.includes(userId) || tabId === 'admin-shortlinks-tab') return;
 
@@ -398,13 +520,14 @@
             try {
                 const dataType = tabId === 'admin-withdrawals-tab' ? 'withdrawals' : 'users';
                 
+                // Cloud Function'a istek
                 const response = await fetch(ADMIN_GET_DATA_FUNCTION_URL, {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ data: { dataType: dataType, adminId: userId } }) 
                 });
                 
                 const result = await response.json();
-                const data = result.data.list || {};
+                const data = result.data?.list || {}; // Güvenli erişim
 
                 if (dataType === 'withdrawals') {
                     renderWithdrawals(data);
@@ -412,7 +535,7 @@
                     renderUsers(data);
                 }
             } catch (e) {
-                listEl.innerHTML = `<div style="padding: 15px; color: var(--color-danger);">Error: Could not fetch admin data. Check your URL.</div>`;
+                listEl.innerHTML = `<div style="padding: 15px; color: var(--color-danger);">Error: Could not fetch admin data. Check ADMIN_GET_DATA_FUNCTION_URL and logs.</div>`;
             }
         }
 
@@ -421,7 +544,7 @@
             listEl.innerHTML = '';
             
             if (Object.keys(withdrawals).length === 0) {
-                 listEl.innerHTML = `<div style="padding: 15px; color: var(--color-text-light);">No pending or completed withdrawal requests.</div>`;
+                 listEl.innerHTML = `<div style="padding: 15px; color: var(--color-text-light);">No pending or completed withdrawal requests found.</div>`;
                  return;
             }
             
@@ -431,7 +554,7 @@
                     <div class="admin-list-item">
                         <div>
                             <span style="font-weight: 500; color: ${item.status === 'Pending' ? 'var(--color-danger)' : 'var(--color-text-dark)'};">$${(item.amount || 0).toFixed(2)} USD</span>
-                            <p style="font-size: 0.8rem; color: var(--color-text-light); margin: 2px 0;">UID: ${item.uid} | Address: ${item.address.substring(0, 8)}...</p>
+                            <p style="font-size: 0.8rem; color: var(--color-text-light); margin: 2px 0;">UID: ${item.uid} | Adr: ${item.address.substring(0, 8)}...</p>
                         </div>
                         <span class="status-badge ${statusClass}">${item.status}</span>
                     </div>
@@ -445,7 +568,7 @@
              listEl.innerHTML = '';
              
              if (Object.keys(users).length === 0) {
-                 listEl.innerHTML = `<div style="padding: 15px; color: var(--color-text-light);">No registered users.</div>`;
+                 listEl.innerHTML = `<div style="padding: 15px; color: var(--color-text-light);">No registered users found.</div>`;
                  return;
              }
 
@@ -465,91 +588,37 @@
              });
         }
 
-        async function addNewShortlink() {
-            if (!ADMIN_IDS.includes(userId)) { window.Telegram.WebApp.showAlert("Unauthorized operation!"); return; }
-            const name = document.getElementById('linkName').value;
-            const baseUrl = document.getElementById('baseUrl').value;
-            const reward = document.getElementById('rewardAmount').value;
-
-            if (!name || !baseUrl || isNaN(parseFloat(reward)) || parseFloat(reward) <= 0) { window.Telegram.WebApp.showAlert("Please fill in all fields correctly."); return; }
-            document.getElementById('callback-result-card').style.display = 'none';
-            window.Telegram.WebApp.MainButton.setText("Creating...").show().disable();
-
-            try {
-                const dataToSend = { name: name, base_url: baseUrl, reward: reward, callback_base_url: CALLBACK_BASE_URL, userId: userId };
-                const response = await fetch(ADD_LINK_FUNCTION_URL, {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ data: dataToSend }) 
-                });
-                const result = await response.json();
-                
-                if (result.data && result.data.status === 'success') {
-                    document.getElementById('finalCallbackUrlOutput').value = result.data.finalCallbackUrl;
-                    document.getElementById('callback-result-card').style.display = 'block';
-                    window.Telegram.WebApp.showAlert(`Shortlink successfully saved! ID: ${result.data.linkId}`);
-                    fetchData(); 
-                } else {
-                    window.Telegram.WebApp.showAlert(`Error: ${result.error?.message || 'Server error while adding link.'}`);
-                }
-            } catch (error) {
-                window.Telegram.WebApp.showAlert("Could not connect to server. Check your URLs.");
-            } finally {
-                window.Telegram.WebApp.MainButton.setText("Refresh Balance").enable();
-            }
-        }
-        
-        function copyCallbackUrl() {
-            const textarea = document.getElementById('finalCallbackUrlOutput');
-            textarea.select();
-            textarea.setSelectionRange(0, 99999); 
-            navigator.clipboard.writeText(textarea.value);
-            window.Telegram.WebApp.showAlert("Callback URL copied to clipboard!");
-        }
-
-        function copyReferralLink() {
-            const linkInput = document.getElementById('referralLink');
-            linkInput.select();
-            linkInput.setSelectionRange(0, 99999); 
-            navigator.clipboard.writeText(linkInput.value);
-            window.Telegram.WebApp.showPopup({message: 'Referral link copied to clipboard!'});
-        }
-
         function showSection(sectionId, element) {
             activeSection = sectionId;
-            // Tüm ana bölümleri gizle
             document.querySelectorAll('.section').forEach(section => { section.style.display = 'none'; });
-            // Sadece seçilen ana bölümü göster
             document.getElementById(`${sectionId}-section`).style.display = 'block';
             
-            // Ana navigasyondaki aktif butonu güncelle
             document.querySelectorAll('.tab-nav button').forEach(button => { button.classList.remove('active'); });
-            if (sectionId !== 'admin') {
-                // Eğer admin değilse, tıklanan sekme düğmesini aktif et
-                if (element.classList.contains('tab-nav-button')) {
-                    element.classList.add('active');
-                }
-            } else {
-                 // Admin'e geçince, ana sekmeyi aktif yapma (sadece ikon butonu kullanılıyor)
+            
+            // Eğer ana navigasyon butonu ise aktif et
+            if (element && element.tagName === 'BUTTON' && element.parentElement.classList.contains('tab-nav')) {
+                element.classList.add('active');
+            } else if (sectionId === 'dashboard') {
+                // Dashboard butonu yoksa (admin'den geri dönüldüyse) ilk butonu aktif et
+                 document.querySelector('.tab-nav button').classList.add('active');
             }
             
-            // Admin paneli için özel aksiyonlar
-            if (sectionId === 'admin' && ADMIN_IDS.includes(userId)) {
+            if (sectionId === 'shortlinks') { renderShortlinks(); } 
+            else if (sectionId === 'admin' && ADMIN_IDS.includes(userId)) {
                  const defaultTabButton = document.querySelector('.admin-tab-nav button.active');
                  if (defaultTabButton) {
                      const tabIdMatch = defaultTabButton.getAttribute('onclick').match(/'([^']+)'/);
                      if (tabIdMatch) {
-                         // Default admin alt sekmesini yükle
                          showAdminSection(tabIdMatch[1], defaultTabButton);
                      }
                  }
             }
         }
         
-        // Başlangıçta tüm bölümleri gizle ve sadece dashboard'u göster
         document.getElementById('shortlinks-section').style.display = 'none';
         document.getElementById('withdraw-section').style.display = 'none';
         document.getElementById('admin-section').style.display = 'none';
-        document.getElementById('dashboard-section').style.display = 'block'; // Başlangıç sekmesi
+        document.getElementById('dashboard-section').style.display = 'block'; 
         
     </script>
 </body>
