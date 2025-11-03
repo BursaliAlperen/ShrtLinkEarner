@@ -10,7 +10,7 @@
 
     <style>
         /* ========================================= */
-        /* CSS DÜZELTMELERİ */
+        /* CSS STİLLERİ */
         /* ========================================= */
         :root {
             --bg-light: #ffffff;
@@ -69,27 +69,22 @@
         .btn-primary { background-color: var(--color-primary); color: white; padding: 10px 20px; border: none; border-radius: 6px; font-weight: 500; cursor: pointer; transition: background-color 0.2s; width: 100%; }
         .btn-primary:hover { background-color: #0056b3; }
         .disabled-item { opacity: 0.6; }
+        
+        /* Ana Sekme Navigasyonu */
         .tab-nav { display: flex; margin-bottom: 20px; border-bottom: 1px solid var(--border-color); overflow-x: auto; }
         .tab-nav button { flex-shrink: 0; background: none; border: none; padding: 10px 15px; cursor: pointer; font-size: 1rem; color: var(--color-text-light); border-bottom: 2px solid transparent; margin-right: 15px; font-weight: 500; }
         .tab-nav button.active { color: var(--color-primary); border-bottom: 2px solid var(--color-primary); font-weight: 700; }
 
-        /* Admin Listeleri için DÜZELTME */
+        /* Admin Listeleri */
         .scrollable-list-container {
             max-height: 400px;
             overflow-y: auto;
             border: 1px solid var(--border-color);
             border-radius: 8px;
-            background-color: var(--bg-card); /* Arka plan rengini düzelttik */
+            background-color: var(--bg-card); 
             margin-top: 15px;
         }
-        
-        .admin-list-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 15px;
-            border-bottom: 1px solid var(--border-color);
-        }
+        .admin-list-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; border-bottom: 1px solid var(--border-color); }
         .admin-list-item:last-child { border-bottom: none; }
         .admin-list-item:hover { background-color: #e9ecef; }
         .status-badge { padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: 500; }
@@ -97,30 +92,10 @@
         .status-paid { background-color: var(--color-success); color: white; }
         .status-rejected { background-color: var(--color-danger); color: white; }
 
-        /* Admin Sekmeleri için DÜZELTME */
-        .admin-tab-nav {
-            display: flex;
-            border-bottom: 1px solid var(--border-color);
-            margin-bottom: 15px;
-            overflow-x: auto;
-        }
-        .admin-tab-nav button {
-            flex-shrink: 0;
-            background: none;
-            border: none;
-            padding: 10px 15px;
-            cursor: pointer;
-            font-size: 0.9rem;
-            color: var(--color-text-light);
-            border-bottom: 2px solid transparent;
-            margin-right: 10px;
-            font-weight: 500;
-        }
-        .admin-tab-nav button.active {
-            color: var(--color-danger);
-            border-bottom: 2px solid var(--color-danger);
-            font-weight: 700;
-        }
+        /* Admin Sekmeleri */
+        .admin-tab-nav { display: flex; border-bottom: 1px solid var(--border-color); margin-bottom: 15px; overflow-x: auto; }
+        .admin-tab-nav button { flex-shrink: 0; background: none; border: none; padding: 10px 15px; cursor: pointer; font-size: 0.9rem; color: var(--color-text-light); border-bottom: 2px solid transparent; margin-right: 10px; font-weight: 500; }
+        .admin-tab-nav button.active { color: var(--color-danger); border-bottom: 2px solid var(--color-danger); font-weight: 700; }
     </style>
 </head>
 <body>
@@ -235,15 +210,15 @@
         const ADD_LINK_FUNCTION_URL = 'YOUR_ADD_LINK_FUNCTION_URL'; 
         const CALLBACK_BASE_URL = 'YOUR_FIREBASE_CALLBACK_URL'; 
         const WITHDRAW_FUNCTION_URL = 'YOUR_WITHDRAW_FUNCTION_URL'; 
-        const ADMIN_GET_DATA_FUNCTION_URL = 'YOUR_ADMIN_GET_DATA_FUNCTION_URL'; // Yeni: Admin verisi çekme
+        const ADMIN_GET_DATA_FUNCTION_URL = 'YOUR_ADMIN_GET_DATA_FUNCTION_URL'; // Cloud Function URL'si
 
-        // SİZİN TELEGRAM ID'NİZ
+        // SİZİN TELEGRAM ID'NİZ (LÜTFEN KONTROL EDİN VE DEĞİŞTİRİN)
         const ADMIN_IDS = ['7904032877']; 
 
         // =======================================================
         // GLOBAL DURUM VE CORE FONKSİYONLAR
         // =======================================================
-        let userId = '999999999'; 
+        let userId = '999999999'; // Varsayılan ID
         let userCompletedLinks = {};
         let shortlinksData = {};
         let currentUsdBalance = 0.00;
@@ -257,22 +232,26 @@
         function initializeMiniApp() {
             if (window.Telegram && window.Telegram.WebApp) {
                 const webApp = window.Telegram.WebApp;
-                const user = webApp.initDataUnsafe.user;
-                
-                if (user) {
-                    userId = user.id.toString();
-                }
-                
                 webApp.ready();
+                
+                // ID'yi kesin olarak string formatında almaya çalışıyoruz
+                if (webApp.initDataUnsafe && webApp.initDataUnsafe.user && webApp.initDataUnsafe.user.id) {
+                    userId = webApp.initDataUnsafe.user.id.toString(); 
+                } 
+                
                 webApp.MainButton.setText("Refresh Balance").show().onClick(fetchData);
                 document.body.style.backgroundColor = webApp.themeParams.bg_color || 'var(--bg-light)';
                 
+                // ADMIN KONTROLÜ VE BUTON GÖRÜNÜRLÜĞÜ
                 if (ADMIN_IDS.includes(userId)) {
                     document.getElementById('admin-tab-btn').style.display = 'inline-block';
+                    console.log(`Admin butonu etkinleştirildi! ID: ${userId}`);
+                } else {
+                    document.getElementById('admin-tab-btn').style.display = 'none';
+                    console.log(`Admin butonu gizli. Kullanıcı ID: ${userId}`);
                 }
                 
                 fetchData(); 
-                // Gerçek zamanlılık için periyodik güncelleme
                 setInterval(fetchData, 10000); 
             } else {
                  fetchData();
@@ -280,8 +259,8 @@
         }
 
         async function fetchData() {
+            // ... (veri çekme mantığı aynı) ...
             try {
-                // ... (Kullanıcı ve Shortlink verisini çekme aynı kalır) ...
                 const userResponse = await fetch(`${RTDB_URL}/users/${userId}.json?auth=${FIREBASE_API_KEY}`);
                 const userData = await userResponse.json();
 
@@ -297,15 +276,12 @@
                 
                 updateAllBalances();
                 
-                // Admin verisini çekme sadece Admin sekmesi aktifken yapılmalıdır.
                 if (ADMIN_IDS.includes(userId) && activeSection === 'admin') {
+                    // Admin sekmesi aktifse, sadece ilgili sekmeyi güncelle
                     fetchAdminData(activeAdminTab);
                 }
             } catch (error) {
                 console.error("Veri çekme hatası:", error);
-                if (window.Telegram && window.Telegram.WebApp) {
-                    // window.Telegram.WebApp.showAlert("Hata: Sunucuya bağlanılamıyor.");
-                }
             }
         }
 
@@ -322,6 +298,7 @@
              }
         }
         
+        // ... (renderShortlinks ve closeMiniAppOnVisit aynı kalır) ...
         function renderShortlinks() { 
             const listEl = document.getElementById('shortlink-list');
             listEl.innerHTML = '';
@@ -334,8 +311,7 @@
             Object.entries(shortlinksData).forEach(([linkId, linkData]) => {
                 const isPassed = userCompletedLinks[linkId] === true; 
                 const finalVisitUrl = `${linkData.base_url}?sub_id=${userId}`; 
-                
-                // ... (Listeyi render etme kodu aynı kalır) ...
+
                 const itemHtml = `
                     <div class="shortlink-item ${isPassed ? 'disabled-item' : ''}">
                         <div class="item-details">
@@ -365,41 +341,30 @@
              }
         }
 
-
         // =======================================================
         // WITHDRAWAL FUNCTIONS (GERÇEK İSTEK)
         // =======================================================
-
         async function requestWithdrawal() {
              const amount = parseFloat(document.getElementById('withdrawAmount').value);
              const address = document.getElementById('usdtAddress').value.trim();
              
              if(amount < MIN_WITHDRAWAL) {
-                 window.Telegram.WebApp.showAlert(`Minimum çekim $${MIN_WITHDRAWAL.toFixed(2)} USD'dir.`);
-                 return;
+                 window.Telegram.WebApp.showAlert(`Minimum çekim $${MIN_WITHDRAWAL.toFixed(2)} USD'dir.`); return;
              }
              if(amount > currentUsdBalance) {
-                 window.Telegram.WebApp.showAlert("Yetersiz bakiye!");
-                 return;
+                 window.Telegram.WebApp.showAlert("Yetersiz bakiye!"); return;
              }
              if(address.length < 20 || !address.startsWith('0x')) {
-                 window.Telegram.WebApp.showAlert("Geçersiz USDT (MATIC) adresi!");
-                 return;
+                 window.Telegram.WebApp.showAlert("Geçersiz USDT (MATIC) adresi!"); return;
              }
              
              window.Telegram.WebApp.MainButton.setText("Talebiniz Gönderiliyor...").show().disable();
              
              try {
                 const response = await fetch(WITHDRAW_FUNCTION_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
-                        data: {
-                            userId: userId, 
-                            amount: amount, 
-                            address: address,
-                            currency: 'USDT_MATIC'
-                        }
+                        data: { userId: userId, amount: amount, address: address, currency: 'USDT_MATIC' }
                     })
                 });
                 
@@ -407,11 +372,10 @@
                 
                 if (result.data && result.data.status === 'success') {
                     window.Telegram.WebApp.showAlert("Çekim talebiniz başarıyla oluşturuldu ve işlenmeyi bekliyor.");
-                    fetchData(); // Yeni bakiyeyi ve talepleri çek
+                    fetchData(); 
                 } else {
                     window.Telegram.WebApp.showAlert(`Hata: ${result.error?.message || 'Çekim isteği sunucudan reddedildi.'}`);
                 }
-
              } catch (e) {
                  window.Telegram.WebApp.showAlert("Çekim talebi gönderilemedi. Sunucu bağlantı hatası.");
              } finally {
@@ -421,10 +385,9 @@
 
 
         // =======================================================
-        // ADMIN PANELİ FONKSİYONLARI (KAYDIRILABİLİR GERÇEK VERİ)
+        // ADMIN PANELİ FONKSİYONLARI
         // =======================================================
         
-        // Admin Sekme Yöneticisi
         function showAdminSection(tabId, element) {
             activeAdminTab = tabId;
             document.querySelectorAll('.admin-tab-content').forEach(section => {
@@ -437,7 +400,6 @@
             });
             element.classList.add('active');
             
-            // Yeni sekmeye geçildiğinde veriyi çek
             fetchAdminData(tabId);
         }
         
@@ -447,30 +409,34 @@
             const listEl = document.getElementById(tabId.replace('-tab', '-list'));
             if (!listEl) return;
             
+            // Eğer kısa link ekleme sekmesiyse listeyi yenileme
+            if (tabId === 'admin-shortlinks-tab') return;
+            
             listEl.innerHTML = `<div style="padding: 15px; color: var(--color-primary);"><i class="fas fa-spinner fa-spin"></i> Veriler yükleniyor...</div>`;
 
             try {
-                // Örnek olarak tüm veriyi tek bir fonksiyondan çekelim
+                const dataType = tabId === 'admin-withdrawals-tab' ? 'withdrawals' : 'users';
+                
                 const response = await fetch(ADMIN_GET_DATA_FUNCTION_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ data: { dataType: tabId, adminId: userId } }) 
+                    body: JSON.stringify({ data: { dataType: dataType, adminId: userId } }) 
                 });
                 
                 const result = await response.json();
-                const data = result.data.list || {}; // Sunucudan gelen data
+                const data = result.data.list || {};
 
-                if (tabId === 'admin-withdrawals-tab') {
+                if (dataType === 'withdrawals') {
                     renderWithdrawals(data);
-                } else if (tabId === 'admin-users-tab') {
+                } else if (dataType === 'users') {
                     renderUsers(data);
                 }
             } catch (e) {
-                listEl.innerHTML = `<div style="padding: 15px; color: var(--color-danger);">Hata: Admin verileri çekilemedi.</div>`;
+                listEl.innerHTML = `<div style="padding: 15px; color: var(--color-danger);">Hata: Admin verileri çekilemedi. URL'yi kontrol edin.</div>`;
+                console.error("Admin data fetch error:", e);
             }
         }
 
-        // Ödeme Taleplerini Render Etme
         function renderWithdrawals(withdrawals) {
             const listEl = document.getElementById('admin-withdrawal-list');
             listEl.innerHTML = '';
@@ -485,7 +451,7 @@
                 const itemHtml = `
                     <div class="admin-list-item">
                         <div>
-                            <span style="font-weight: 500; color: ${item.status === 'Pending' ? 'var(--color-danger)' : 'var(--color-text-dark)'};">$${item.amount.toFixed(2)} USD</span>
+                            <span style="font-weight: 500; color: ${item.status === 'Pending' ? 'var(--color-danger)' : 'var(--color-text-dark)'};">$${(item.amount || 0).toFixed(2)} USD</span>
                             <p style="font-size: 0.8rem; color: var(--color-text-light); margin: 2px 0;">UID: ${item.uid} | Adres: ${item.address.substring(0, 8)}...</p>
                         </div>
                         <span class="status-badge ${statusClass}">${item.status}</span>
@@ -495,7 +461,6 @@
             });
         }
         
-        // Kullanıcıları Render Etme
         function renderUsers(users) {
              const listEl = document.getElementById('admin-user-list');
              listEl.innerHTML = '';
@@ -505,7 +470,6 @@
                  return;
              }
 
-             // Bakiyeye göre sıralama (Desc)
              const sortedUsers = Object.entries(users).sort(([, a], [, b]) => (b.balance || 0) - (a.balance || 0));
 
              sortedUsers.forEach(([uid, user]) => {
@@ -523,7 +487,7 @@
         }
 
 
-        // ... (addNewShortlink, copyCallbackUrl, showSection, copyReferralLink fonksiyonları aynı kalır) ...
+        // ... (addNewShortlink, copyCallbackUrl, copyReferralLink ve showSection fonksiyonları aynı kalır) ...
         async function addNewShortlink() {
             if (!ADMIN_IDS.includes(userId)) { window.Telegram.WebApp.showAlert("Yetkisiz işlem!"); return; }
             const name = document.getElementById('linkName').value;
@@ -531,8 +495,7 @@
             const reward = document.getElementById('rewardAmount').value;
 
             if (!name || !baseUrl || isNaN(parseFloat(reward)) || parseFloat(reward) <= 0) {
-                window.Telegram.WebApp.showAlert("Lütfen tüm alanları doğru doldurun.");
-                return;
+                window.Telegram.WebApp.showAlert("Lütfen tüm alanları doğru doldurun."); return;
             }
             document.getElementById('callback-result-card').style.display = 'none';
             window.Telegram.WebApp.MainButton.setText("Oluşturuluyor...").show().disable();
@@ -554,12 +517,28 @@
                     window.Telegram.WebApp.showAlert(`Hata: ${result.error?.message || 'Link eklenirken sunucu hatası.'}`);
                 }
             } catch (error) {
-                window.Telegram.WebApp.showAlert("Sunucuya bağlanılamadı.");
+                window.Telegram.WebApp.showAlert("Sunucuya bağlanılamadı. URL'leri kontrol edin.");
             } finally {
                 window.Telegram.WebApp.MainButton.setText("Refresh Balance").enable();
             }
         }
         
+        function copyCallbackUrl() {
+            const textarea = document.getElementById('finalCallbackUrlOutput');
+            textarea.select();
+            textarea.setSelectionRange(0, 99999); 
+            navigator.clipboard.writeText(textarea.value);
+            window.Telegram.WebApp.showAlert("Callback URL panoya kopyalandı!");
+        }
+
+        function copyReferralLink() {
+            const linkInput = document.getElementById('referralLink');
+            linkInput.select();
+            linkInput.setSelectionRange(0, 99999); 
+            navigator.clipboard.writeText(linkInput.value);
+            window.Telegram.WebApp.showPopup({message: 'Referans linki panoya kopyalandı!'});
+        }
+
         function showSection(sectionId, element) {
             activeSection = sectionId;
             document.querySelectorAll('.section').forEach(section => { section.style.display = 'none'; });
@@ -569,14 +548,17 @@
             
             if (sectionId === 'shortlinks') { renderShortlinks(); } 
             else if (sectionId === 'admin' && ADMIN_IDS.includes(userId)) {
-                 // Admin sekmesine geçildiğinde varsayılan sekmeyi yükle
-                 const defaultTabButton = document.querySelector('.admin-tab-nav button.active') || document.querySelector('.admin-tab-nav button');
+                 const defaultTabButton = document.querySelector('.admin-tab-nav button.active');
                  if (defaultTabButton) {
-                     showAdminSection(defaultTabButton.getAttribute('onclick').match(/'([^']+)'/)[1], defaultTabButton);
+                     // Sekme ID'sini al ve admin verisini çek
+                     const tabIdMatch = defaultTabButton.getAttribute('onclick').match(/'([^']+)'/);
+                     if (tabIdMatch) {
+                         showAdminSection(tabIdMatch[1], defaultTabButton);
+                     }
                  }
             }
         }
-
+        
         // Başlangıçta tüm bölümleri gizle
         document.getElementById('shortlinks-section').style.display = 'none';
         document.getElementById('withdraw-section').style.display = 'none';
